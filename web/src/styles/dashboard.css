@@ -201,20 +201,6 @@
   background: var(--g-color-accent-brand);
 }
 
-.formula {
-  margin: 14px 0 0;
-  padding: 13px;
-  border-radius: 10px;
-  background: var(--g-color-base-info-light);
-  color: var(--g-color-text-secondary);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.formula code {
-  color: var(--g-color-text-primary);
-}
-
 .stat-list {
   padding: 6px 18px 18px;
 }
@@ -274,6 +260,26 @@
 .table-wrap {
   overflow: auto;
   max-height: 650px;
+}
+
+.disclaimer {
+  margin-top: 16px;
+}
+
+.disclaimer-body {
+  padding: 12px 18px 18px;
+  color: var(--g-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 980px;
+}
+
+.disclaimer-body p {
+  margin: 0;
+}
+
+.disclaimer-body p + p {
+  margin-top: 10px;
 }
 
 .footer-note {

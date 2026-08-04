@@ -30,6 +30,48 @@ a {
   padding: 24px;
 }
 
+.club-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--g-color-line-generic);
+}
+
+.club-logo {
+  height: 76px;
+  width: auto;
+  border-radius: 10px;
+  background: #05060a;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+}
+
+.club-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 9px;
+  font-size: 23px;
+  line-height: 30px;
+  letter-spacing: -0.01em;
+}
+
+.club-name {
+  font-weight: 800;
+}
+
+.club-slogan {
+  color: var(--g-color-text-secondary);
+}
+
+.club-slogan::before {
+  content: '—';
+  margin-right: 9px;
+  color: var(--g-color-text-hint);
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -123,6 +165,16 @@ a {
   min-height: 30px;
   padding: 0 10px;
   font-size: 12px;
+}
+
+.g-button.icon {
+  width: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+.g-button.icon svg {
+  display: block;
 }
 
 .g-input,
@@ -273,6 +325,26 @@ tbody tr:hover {
 @media (max-width: 760px) {
   .shell {
     padding: 14px;
+  }
+
+  .club-bar {
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+  }
+
+  .club-logo {
+    height: 48px;
+  }
+
+  .club-title {
+    font-size: 17px;
+    line-height: 23px;
+    gap: 6px;
+  }
+
+  .club-slogan::before {
+    margin-right: 6px;
   }
 
   .topbar {
