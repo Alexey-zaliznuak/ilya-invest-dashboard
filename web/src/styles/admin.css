@@ -1,0 +1,151 @@
+.auth-wrap {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  padding: 20px 0;
+}
+
+.auth-card {
+  width: min(400px, 100%);
+  padding: 26px;
+  border-radius: 16px;
+  border: 1px solid var(--g-color-line-generic);
+  background: var(--g-color-base-generic);
+  box-shadow: var(--shadow);
+}
+
+.auth-card h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.auth-card p {
+  margin: 0 0 20px;
+  color: var(--g-color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.field > label {
+  color: var(--g-color-text-secondary);
+  font-size: 12px;
+}
+
+.field-hint {
+  color: var(--g-color-text-hint);
+  font-size: 11px;
+}
+
+.form-error {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--g-color-base-negative-light);
+  color: var(--g-color-text-negative);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.form-error[hidden] {
+  display: none;
+}
+
+.editor {
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 90px 150px minmax(120px, 1fr) minmax(200px, 2fr) 130px;
+  gap: 12px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.form-grid .field {
+  margin-bottom: 0;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.admin-table-wrap {
+  overflow: auto;
+  max-height: 620px;
+}
+
+.admin-table td {
+  font-size: 12px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+tr.editing {
+  background: var(--g-color-base-info-light);
+}
+
+.toast-stack {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 50;
+  display: grid;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 36px));
+}
+
+.toast {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--g-color-base-float);
+  border: 1px solid var(--g-color-line-generic-accent);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  line-height: 1.4;
+  animation: toast-in 0.18s ease;
+}
+
+.toast.ok {
+  border-color: transparent;
+  background: var(--g-color-base-positive-light);
+  color: var(--g-color-text-positive);
+}
+
+.toast.error {
+  border-color: transparent;
+  background: var(--g-color-base-negative-light);
+  color: var(--g-color-text-negative);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

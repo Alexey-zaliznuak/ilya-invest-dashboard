@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ROE — прирост капитала от 100%</title>
+<style>
+:root {
+  color-scheme: dark;
+  --g-color-base-background: #101114;
+  --g-color-base-generic: #17191f;
+  --g-color-base-generic-hover: #1d2027;
+  --g-color-base-float: #20232b;
+  --g-color-line-generic: rgba(255,255,255,.10);
+  --g-color-line-generic-accent: rgba(255,255,255,.17);
+  --g-color-text-primary: #f4f5f7;
+  --g-color-text-secondary: #a7adba;
+  --g-color-text-hint: #737b8b;
+  --g-color-text-link: #6ba8ff;
+  --g-color-text-positive: #43d17d;
+  --g-color-text-negative: #ff6b6b;
+  --g-color-base-positive-light: rgba(67,209,125,.14);
+  --g-color-base-negative-light: rgba(255,107,107,.14);
+  --g-color-base-info-light: rgba(107,168,255,.13);
+  --g-color-accent-brand: #ffbe5c;
+  --g-color-accent-brand-hover: #ffca7d;
+  --shadow: 0 14px 44px rgba(0,0,0,.25);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --g-color-base-background: #f5f6f8;
+  --g-color-base-generic: #ffffff;
+  --g-color-base-generic-hover: #f0f2f5;
+  --g-color-base-float: #ffffff;
+  --g-color-line-generic: rgba(31,35,43,.10);
+  --g-color-line-generic-accent: rgba(31,35,43,.17);
+  --g-color-text-primary: #1f232b;
+  --g-color-text-secondary: #606878;
+  --g-color-text-hint: #8e96a5;
+  --g-color-text-link: #3078d5;
+  --g-color-text-positive: #138a4b;
+  --g-color-text-negative: #c43c3c;
+  --g-color-base-positive-light: rgba(19,138,75,.10);
+  --g-color-base-negative-light: rgba(196,60,60,.10);
+  --g-color-base-info-light: rgba(48,120,213,.10);
+  --g-color-accent-brand: #f3a620;
+  --g-color-accent-brand-hover: #e79a16;
+  --shadow: 0 12px 34px rgba(29,33,41,.10);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--g-color-base-background);
+  color: var(--g-color-text-primary);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+button, input, select { font: inherit; }
+.shell { max-width: 1480px; margin: 0 auto; padding: 24px; }
+.topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; }
+.brand { display:flex; align-items:center; gap:12px; min-width:0; }
+.logo { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:var(--g-color-accent-brand); color:#17191f; font-weight:800; box-shadow:0 8px 20px rgba(243,166,32,.24); }
+.brand h1 { margin:0; font-size:22px; line-height:28px; letter-spacing:-.02em; }
+.brand p { margin:2px 0 0; color:var(--g-color-text-secondary); font-size:13px; }
+.actions { display:flex; gap:8px; }
+.g-button { appearance:none; border:1px solid var(--g-color-line-generic); background:var(--g-color-base-generic); color:var(--g-color-text-primary); border-radius:9px; min-height:36px; padding:0 13px; cursor:pointer; transition:.15s ease; }
+.g-button:hover { background:var(--g-color-base-generic-hover); border-color:var(--g-color-line-generic-accent); }
+.g-button.accent { background:var(--g-color-accent-brand); color:#17191f; border-color:transparent; font-weight:700; }
+.hero { position:relative; overflow:hidden; border:1px solid var(--g-color-line-generic); background:linear-gradient(135deg,var(--g-color-base-generic),var(--g-color-base-float)); border-radius:18px; padding:28px; box-shadow:var(--shadow); margin-bottom:16px; }
+.hero::after { content:""; position:absolute; inset:auto -80px -120px auto; width:320px; height:320px; background:radial-gradient(circle,rgba(255,190,92,.22),transparent 66%); pointer-events:none; }
+.eyebrow { color:var(--g-color-text-secondary); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; }
+.hero-row { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(300px,.6fr); align-items:end; gap:28px; margin-top:12px; }
+.hero-value { font-size:clamp(52px,8vw,92px); line-height:.96; letter-spacing:-.06em; font-weight:760; }
+.hero-value small { font-size:.38em; color:var(--g-color-text-secondary); letter-spacing:-.02em; }
+.hero-copy { color:var(--g-color-text-secondary); font-size:15px; line-height:1.55; max-width:670px; margin-top:14px; }
+.pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+.pill { border:1px solid var(--g-color-line-generic); background:rgba(255,255,255,.025); border-radius:999px; padding:7px 10px; color:var(--g-color-text-secondary); font-size:12px; }
+.pill.ok { color:var(--g-color-text-positive); background:var(--g-color-base-positive-light); border-color:transparent; }
+.hero-side { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.mini { padding:14px; border-radius:12px; background:rgba(255,255,255,.035); border:1px solid var(--g-color-line-generic); }
+.mini-label { color:var(--g-color-text-secondary); font-size:12px; }
+.mini-value { margin-top:6px; font-size:22px; font-weight:700; }
+.positive { color:var(--g-color-text-positive); }
+.negative { color:var(--g-color-text-negative); }
+.grid-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+.card { border:1px solid var(--g-color-line-generic); background:var(--g-color-base-generic); border-radius:14px; padding:17px; min-width:0; }
+.card-label { color:var(--g-color-text-secondary); font-size:12px; }
+.card-value { font-size:25px; line-height:1.2; font-weight:720; margin-top:8px; letter-spacing:-.025em; }
+.card-note { color:var(--g-color-text-hint); font-size:11px; margin-top:7px; line-height:1.4; }
+.layout { display:grid; grid-template-columns:minmax(0,2fr) minmax(320px,.75fr); gap:16px; margin-bottom:16px; }
+.panel { border:1px solid var(--g-color-line-generic); background:var(--g-color-base-generic); border-radius:14px; overflow:hidden; }
+.panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:18px 18px 0; }
+.panel-title { font-size:16px; font-weight:700; }
+.panel-subtitle { color:var(--g-color-text-secondary); font-size:12px; margin-top:4px; }
+.chart-wrap { padding:10px 10px 6px; position:relative; height:430px; }
+#equityChart { width:100%; height:100%; display:block; }
+.chart-tooltip { position:absolute; z-index:5; pointer-events:none; display:none; min-width:190px; padding:10px 12px; border-radius:10px; background:var(--g-color-base-float); border:1px solid var(--g-color-line-generic-accent); box-shadow:var(--shadow); font-size:12px; }
+.chart-tooltip strong { display:block; font-size:14px; margin-bottom:5px; }
+.side-stack { display:grid; gap:16px; }
+.compare { padding:18px; }
+.compare-row { margin-top:18px; }
+.compare-top { display:flex; justify-content:space-between; gap:12px; font-size:13px; }
+.bar { height:10px; border-radius:999px; background:var(--g-color-base-background); overflow:hidden; margin-top:8px; }
+.bar > i { display:block; height:100%; border-radius:inherit; background:var(--g-color-text-link); }
+.bar > i.compound { background:var(--g-color-accent-brand); }
+.formula { margin:14px 0 0; padding:13px; border-radius:10px; background:var(--g-color-base-info-light); color:var(--g-color-text-secondary); font-size:12px; line-height:1.5; }
+.formula code { color:var(--g-color-text-primary); }
+.stat-list { padding:6px 18px 18px; }
+.stat-row { display:flex; justify-content:space-between; gap:16px; padding:13px 0; border-bottom:1px solid var(--g-color-line-generic); font-size:13px; }
+.stat-row:last-child { border-bottom:none; }
+.stat-row span:first-child { color:var(--g-color-text-secondary); }
+.controls { display:flex; flex-wrap:wrap; gap:8px; padding:14px 18px; border-bottom:1px solid var(--g-color-line-generic); }
+.g-input, .g-select { min-height:36px; border:1px solid var(--g-color-line-generic); background:var(--g-color-base-background); color:var(--g-color-text-primary); border-radius:9px; padding:0 11px; outline:none; }
+.g-input { flex:1 1 240px; }
+.g-input:focus, .g-select:focus { border-color:var(--g-color-text-link); box-shadow:0 0 0 2px rgba(107,168,255,.13); }
+.table-wrap { overflow:auto; max-height:650px; }
+table { width:100%; border-collapse:separate; border-spacing:0; font-size:12px; }
+th { position:sticky; top:0; z-index:2; text-align:left; color:var(--g-color-text-secondary); background:var(--g-color-base-generic); font-weight:600; padding:11px 14px; border-bottom:1px solid var(--g-color-line-generic); white-space:nowrap; }
+td { padding:11px 14px; border-bottom:1px solid var(--g-color-line-generic); vertical-align:middle; }
+tbody tr:hover { background:var(--g-color-base-generic-hover); }
+.ticker { display:inline-flex; padding:5px 8px; border-radius:7px; background:var(--g-color-base-background); border:1px solid var(--g-color-line-generic); font-weight:700; }
+.delta-chip { display:inline-flex; min-width:74px; justify-content:flex-end; padding:5px 8px; border-radius:7px; font-weight:700; }
+.delta-chip.up { color:var(--g-color-text-positive); background:var(--g-color-base-positive-light); }
+.delta-chip.down { color:var(--g-color-text-negative); background:var(--g-color-base-negative-light); }
+.muted { color:var(--g-color-text-secondary); }
+.footer-note { color:var(--g-color-text-hint); font-size:11px; line-height:1.5; padding:4px 2px 24px; }
+@media (max-width:1100px) { .grid-cards { grid-template-columns:repeat(3,1fr); } .layout { grid-template-columns:1fr; } .side-stack { grid-template-columns:1fr 1fr; } }
+@media (max-width:760px) { .shell { padding:14px; } .topbar { align-items:flex-start; } .brand p { display:none; } .hero { padding:20px; } .hero-row { grid-template-columns:1fr; } .hero-side { grid-template-columns:repeat(2,1fr); } .grid-cards { grid-template-columns:1fr 1fr; } .side-stack { grid-template-columns:1fr; } .chart-wrap { height:340px; } .hide-mobile { display:none; } }
+@media (max-width:440px) { .grid-cards { grid-template-columns:1fr; } .hero-side { grid-template-columns:1fr 1fr; } .actions .g-button:first-child { display:none; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">R</div>
+      <div><h1>ROE / капитал</h1><p>Последовательная капитализация каждой фиксации</p></div>
+    </div>
+    <div class="actions">
+      <button class="g-button" id="downloadCsv">Экспорт CSV</button>
+      <button class="g-button" id="themeToggle" aria-label="Сменить тему">Светлая тема</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Капитал после 95 фиксаций</div>
+    <div class="hero-row">
+      <div>
+        <div class="hero-value"><span id="heroCapital">213,52</span><small>% от старта</small></div>
+        <div class="hero-copy">Стартовая база — 100%. Каждый опубликованный ROE трактуется как отношение результата операции к капиталу <strong>до её закрытия</strong>, после чего применяется к уже изменившейся базе.</div>
+        <div class="pills"><span class="pill ok">Сложный процент включён</span><span class="pill">ROE от капитала до закрытия</span><span class="pill">Порядок — как в сообщениях</span></div>
+      </div>
+      <div class="hero-side">
+        <div class="mini"><div class="mini-label">Чистый прирост</div><div class="mini-value positive" id="heroReturn">+113,52%</div></div>
+        <div class="mini"><div class="mini-label">Пиковый капитал</div><div class="mini-value" id="heroPeak">223,10%</div></div>
+        <div class="mini"><div class="mini-label">Плюсовых фиксаций</div><div class="mini-value" id="heroWins">85</div></div>
+        <div class="mini"><div class="mini-label">Минусовых фиксаций</div><div class="mini-value negative" id="heroLosses">10</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-cards">
+    <div class="card"><div class="card-label">Сумма ROE</div><div class="card-value">+80,498 п.п.</div><div class="card-note">Без реинвестирования</div></div>
+    <div class="card"><div class="card-label">Сложный результат</div><div class="card-value positive">+113,522%</div><div class="card-note">Разница от базы 100%</div></div>
+    <div class="card"><div class="card-label">Макс. просадка</div><div class="card-value negative">−23,104%</div><div class="card-note">От локального пика</div></div>
+    <div class="card"><div class="card-label">Win rate</div><div class="card-value">89,47%</div><div class="card-note">85 из 95 фиксаций</div></div>
+    <div class="card"><div class="card-label">Медиана ROE</div><div class="card-value">+0,628%</div><div class="card-note">На одну фиксацию</div></div>
+    <div class="card"><div class="card-label">Заявлено автором</div><div class="card-value">+64,160%</div><div class="card-note">Итоговый капитал 164,160%</div></div>
+  </section>
+
+  <section class="layout">
+    <div class="panel">
+      <div class="panel-head">
+        <div><div class="panel-title">Кривая капитала</div><div class="panel-subtitle">Наведи курсор на точку, чтобы увидеть сделку и капитал после неё</div></div>
+        <div class="pill" id="rangeLabel">100,00 → 213,52</div>
+      </div>
+      <div class="chart-wrap"><svg id="equityChart" role="img" aria-label="График капитала"></svg><div class="chart-tooltip" id="tooltip"></div></div>
+    </div>
+    <div class="side-stack">
+      <div class="panel compare">
+        <div class="panel-title">Простое сложение vs капитализация</div>
+        <div class="panel-subtitle">Одинаковые ROE дают разный итог</div>
+        <div class="compare-row"><div class="compare-top"><span>Простое сложение</span><strong>180,498%</strong></div><div class="bar"><i style="width:80.5%"></i></div></div>
+        <div class="compare-row"><div class="compare-top"><span>Сложный процент</span><strong>213,522%</strong></div><div class="bar"><i class="compound" style="width:100%"></i></div></div>
+        <div class="formula"><code>Kₙ = Kₙ₋₁ × (1 + ROEₙ / 100)</code><br>ROE относится к капиталу перед закрытием операции: рост со 100 до 110 соответствует +10% ROE. Следующая операция +10% уже увеличит капитал со 110 до 121.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Статистика фиксаций</div><div class="panel-subtitle">По знаку фактического ROE</div></div></div>
+        <div class="stat-list">
+          <div class="stat-row"><span>Средний ROE</span><strong>+0,847%</strong></div>
+          <div class="stat-row"><span>Средний плюс</span><strong class="positive">+1,291%</strong></div>
+          <div class="stat-row"><span>Средний минус</span><strong class="negative">−2,922%</strong></div>
+          <div class="stat-row"><span>Лучшая фиксация</span><strong class="positive">+10,702%</strong></div>
+          <div class="stat-row"><span>Худшая фиксация</span><strong class="negative">−22,440%</strong></div>
+          <div class="stat-row"><span>Пик перед просадкой</span><strong>223,095%</strong></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><div class="panel-title">Все фиксации</div><div class="panel-subtitle">Вклад в капитал рассчитан от текущей базы перед каждой операцией</div></div><div class="pill" id="rowsCount">95 строк</div></div>
+    <div class="controls">
+      <input class="g-input" id="search" placeholder="Поиск по тикеру или описанию">
+      <select class="g-select" id="signFilter"><option value="all">Все результаты</option><option value="positive">Только плюс</option><option value="negative">Только минус</option></select>
+      <select class="g-select" id="sort"><option value="order">По порядку</option><option value="roe-desc">ROE: сначала высокий</option><option value="roe-asc">ROE: сначала низкий</option><option value="capital-desc">Капитал: по убыванию</option></select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Инструмент</th><th>Событие</th><th>ROE</th><th class="hide-mobile">Капитал до</th><th>Вклад в капитал</th><th>Капитал после</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+  <div class="footer-note">Расчёт иллюстративный: комиссии, налоги, проскальзывание, пополнения и выводы не учтены.</div>
+</div>
+
+<script>
+const rawData = [{"id": 1, "ticker": "BRN6", "title": "1-я цель, шорт нефти", "roe": 0.114}, {"id": 2, "ticker": "BRN6", "title": "2-я цель, шорт нефти", "roe": 0.206}, {"id": 3, "ticker": "BRN6", "title": "3-я цель, шорт нефти", "roe": 0.297}, {"id": 4, "ticker": "BRN6", "title": "Ручное закрытие остатка", "roe": 0.274}, {"id": 5, "ticker": "BRQ6", "title": "Стоп по шорту нефти", "roe": -0.094}, {"id": 6, "ticker": "BRU6", "title": "Ручное закрытие", "roe": -0.136}, {"id": 7, "ticker": "GDU6", "title": "Фиксация 4/4% капитала", "roe": 1.066}, {"id": 8, "ticker": "GDU6", "title": "Фиксация ещё 2/6%", "roe": 0.69}, {"id": 9, "ticker": "GDU6", "title": "Фиксация 2/8%", "roe": 0.284}, {"id": 10, "ticker": "SVU6", "title": "Фиксация 15/15%", "roe": 2.991}, {"id": 11, "ticker": "SVU6", "title": "Фиксация ещё 10/25%", "roe": 2.375}, {"id": 12, "ticker": "SVU6", "title": "Фиксация 5/30%", "roe": 0.613}, {"id": 13, "ticker": "BRU6", "title": "Лонг нефти, фиксация 20/20%", "roe": -0.192}, {"id": 14, "ticker": "BRQ6", "title": "Лонг нефти, фиксация 10/10%", "roe": -0.082}, {"id": 15, "ticker": "GZU6", "title": "1-я цель, шорт Газпрома", "roe": 0.079}, {"id": 16, "ticker": "GZU6", "title": "Частичная фиксация вместо 2-й цели", "roe": 0.13}, {"id": 17, "ticker": "GZU6", "title": "3-я цель, шорт Газпрома", "roe": 0.284}, {"id": 18, "ticker": "CRU6", "title": "Закрытие шорта юаня", "roe": -1.068}, {"id": 19, "ticker": "MMU6", "title": "1-я цель, шорт MXI", "roe": 0.791}, {"id": 20, "ticker": "MXU6", "title": "1-я цель, шорт MIX", "roe": 1.218}, {"id": 21, "ticker": "S0U6", "title": "1-я цель", "roe": 0.05}, {"id": 22, "ticker": "S0U6", "title": "2-я цель", "roe": 0.105}, {"id": 23, "ticker": "X5U6", "title": "1-я цель", "roe": 0.066}, {"id": 24, "ticker": "X5U6", "title": "2-я цель", "roe": 0.111}, {"id": 25, "ticker": "MMU6", "title": "Фиксация 3.5/7.5% в шорте MXI", "roe": 2.34}, {"id": 26, "ticker": "MXU6", "title": "Фиксация 5.5/13.5% в шорте MIX", "roe": 3.592}, {"id": 27, "ticker": "MMU6", "title": "IMOEX: 1-я цель", "roe": 1.294}, {"id": 28, "ticker": "MMU6", "title": "IMOEX: 2-я цель", "roe": 1.402}, {"id": 29, "ticker": "MMU6", "title": "IMOEX: 3-я цель", "roe": 1.006}, {"id": 30, "ticker": "MXU6", "title": "IMOEX: 1-я цель", "roe": 2.138}, {"id": 31, "ticker": "MXU6", "title": "IMOEX: 2-я цель", "roe": 2.318}, {"id": 32, "ticker": "MXU6", "title": "IMOEX: 3-я цель", "roe": 2.996}, {"id": 33, "ticker": "SVU6", "title": "Фиксация 42/52% в шорте серебра", "roe": 10.702}, {"id": 34, "ticker": "SVU6", "title": "Фиксация 10/10% в шорте серебра", "roe": 3.287}, {"id": 35, "ticker": "GDU6", "title": "Фиксация 18/24% в шорте золота", "roe": 3.458}, {"id": 36, "ticker": "GDU6", "title": "Фиксация 8/8% в шорте золота", "roe": 2.39}, {"id": 37, "ticker": "GKU6", "title": "1-я цель", "roe": 0.09}, {"id": 38, "ticker": "GKU6", "title": "Последняя цель", "roe": 0.258}, {"id": 39, "ticker": "VBU6", "title": "1-я цель", "roe": 0.126}, {"id": 40, "ticker": "VBU6", "title": "Остаток шорта ВТБ", "roe": 0.248}, {"id": 41, "ticker": "GZU6", "title": "Остаток шорта Газпрома", "roe": 0.628}, {"id": 42, "ticker": "SZU6", "title": "1-я цель", "roe": 0.048}, {"id": 43, "ticker": "SZU6", "title": "Остаток шорта Сегежи", "roe": 0.119}, {"id": 44, "ticker": "MMU6", "title": "1/4 целей на снижение", "roe": 2.23}, {"id": 45, "ticker": "MXU6", "title": "1/4 целей на снижение", "roe": 5.303}, {"id": 46, "ticker": "BRU6", "title": "Лонг нефти: фиксация 8/24%", "roe": 0.844}, {"id": 47, "ticker": "BRU6", "title": "Лонг нефти: фиксация 8/16%", "roe": 1.221}, {"id": 48, "ticker": "BRU6", "title": "Лонг нефти: фиксация 8/8%", "roe": 1.598}, {"id": 49, "ticker": "GDM6", "title": "1-я цель на снижение", "roe": 0.07}, {"id": 50, "ticker": "GDM6", "title": "Частичная фиксация вместо 2-й цели", "roe": 0.096}, {"id": 51, "ticker": "GDM6", "title": "Остаток закрыт по стопу в плюсе", "roe": 0.039}, {"id": 52, "ticker": "SVM6", "title": "1-я цель на снижение", "roe": 0.212}, {"id": 53, "ticker": "SVM6", "title": "2-я цель на снижение", "roe": 0.307}, {"id": 54, "ticker": "GDM6", "title": "1-я цель на снижение, новая серия", "roe": 0.17}, {"id": 55, "ticker": "GDM6", "title": "2-я цель на снижение", "roe": 0.38}, {"id": 56, "ticker": "GDM6", "title": "3-я цель на снижение", "roe": 0.59}, {"id": 57, "ticker": "GDM6", "title": "Остаток шорта золота", "roe": 0.697}, {"id": 58, "ticker": "CRU6", "title": "Фиксация шорта юаня", "roe": 0.257}, {"id": 59, "ticker": "SVM6", "title": "SILV-6.26: 1-я цель", "roe": 0.203}, {"id": 60, "ticker": "SVM6", "title": "SILV-6.26: частичная фиксация", "roe": 0.224}, {"id": 61, "ticker": "SVM6", "title": "SILV-6.26: 3-я цель", "roe": 1.323}, {"id": 62, "ticker": "SVM6", "title": "SILV-6.26: 4-я цель", "roe": 2.072}, {"id": 63, "ticker": "SVU6", "title": "Полное закрытие шорта серебра", "roe": 2.422}, {"id": 64, "ticker": "PDM6", "title": "Палладий: фиксация 1/3", "roe": 0.114}, {"id": 65, "ticker": "PDM6", "title": "Палладий: закрытие остатка", "roe": 0.432}, {"id": 66, "ticker": "PDU6", "title": "Полное закрытие шорта палладия", "roe": 1.184}, {"id": 67, "ticker": "MMU6", "title": "MXI-6.26: оставшаяся 1/2", "roe": 2.021}, {"id": 68, "ticker": "MXU6", "title": "MIX-6.26: оставшаяся 1/2", "roe": 2.653}, {"id": 69, "ticker": "SVU6", "title": "1-я цель на снижение", "roe": 0.162}, {"id": 70, "ticker": "SVU6", "title": "2-я цель на снижение", "roe": 0.26}, {"id": 71, "ticker": "MMU6", "title": "MXI-9.26: фиксация 1/2", "roe": 0.531}, {"id": 72, "ticker": "MXU6", "title": "MIX-9.26: фиксация 1/2", "roe": 1.052}, {"id": 73, "ticker": "BR-7.26", "title": "Лонг нефти: фиксация 65/85%", "roe": -22.44}, {"id": 74, "ticker": "SILV-9.26", "title": "Шорт серебра: полное закрытие", "roe": -0.856}, {"id": 75, "ticker": "MMU6", "title": "Новая серия: 1-я цель", "roe": 2.027}, {"id": 76, "ticker": "MXU6", "title": "Новая серия: 1-я цель", "roe": 3.135}, {"id": 77, "ticker": "MMU6", "title": "Фиксация ещё 2/10%", "roe": 1.326}, {"id": 78, "ticker": "MXU6", "title": "Фиксация ещё 4.5/16.5%", "roe": 2.942}, {"id": 79, "ticker": "MMU6", "title": "Фиксация ещё 4/8%", "roe": 3.163}, {"id": 80, "ticker": "MXU6", "title": "Фиксация ещё 4/12%", "roe": 3.141}, {"id": 81, "ticker": "MIX-9.26", "title": "1-я цель", "roe": 1.735}, {"id": 82, "ticker": "MIX-9.26", "title": "2-я цель", "roe": 1.815}, {"id": 83, "ticker": "MIX-9.26", "title": "3-я цель", "roe": 1.896}, {"id": 84, "ticker": "MIX-9.26", "title": "Ручное закрытие остатка", "roe": 1.739}, {"id": 85, "ticker": "MXI-9.26", "title": "1-я цель", "roe": 0.877}, {"id": 86, "ticker": "MXI-9.26", "title": "2-я цель", "roe": 0.917}, {"id": 87, "ticker": "MXI-9.26", "title": "Ручное закрытие остатка", "roe": 1.754}, {"id": 88, "ticker": "SVU6", "title": "Фиксация 15/45% в шорте серебра", "roe": 1.32}, {"id": 89, "ticker": "SVU6", "title": "1-я цель", "roe": 1.484}, {"id": 90, "ticker": "MMU6", "title": "1-я цель", "roe": 0.338}, {"id": 91, "ticker": "MXU6", "title": "1-я цель", "roe": 0.503}, {"id": 92, "ticker": "MXU6", "title": "2-я цель", "roe": 0.754}, {"id": 93, "ticker": "BR-9.26", "title": "Закрытие нефти", "roe": -1.924}, {"id": 94, "ticker": "GOLD-9.26", "title": "Закрытие золота", "roe": -0.886}, {"id": 95, "ticker": "SILV-9.26", "title": "Закрытие серебра", "roe": -1.541}];
+const fmt = (v, digits=3) => new Intl.NumberFormat('ru-RU',{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(v);
+const signed = (v,d=3) => `${v>=0?'+':'−'}${fmt(Math.abs(v),d)}%`;
+let capital = 100;
+let peak = 100;
+let maxDd = 0;
+const data = rawData.map((item, index) => {
+  const before = capital;
+  const contribution = before * item.roe / 100;
+  capital = before + contribution;
+  peak = Math.max(peak, capital);
+  const drawdown = (capital / peak - 1) * 100;
+  maxDd = Math.min(maxDd, drawdown);
+  return {...item,index,before,contribution,after:capital,peak,drawdown};
+});
+
+const tbody = document.getElementById('tbody');
+const search = document.getElementById('search');
+const signFilter = document.getElementById('signFilter');
+const sort = document.getElementById('sort');
+const rowsCount = document.getElementById('rowsCount');
+
+function renderTable(){
+  const q = search.value.trim().toLowerCase();
+  let rows = data.filter(x => (!q || `${x.ticker} ${x.title}`.toLowerCase().includes(q)) && (signFilter.value==='all' || (signFilter.value==='positive'?x.roe>=0:x.roe<0)));
+  if(sort.value==='roe-desc') rows.sort((a,b)=>b.roe-a.roe);
+  if(sort.value==='roe-asc') rows.sort((a,b)=>a.roe-b.roe);
+  if(sort.value==='capital-desc') rows.sort((a,b)=>b.after-a.after);
+  if(sort.value==='order') rows.sort((a,b)=>a.id-b.id);
+  rowsCount.textContent = `${rows.length} строк`;
+  tbody.innerHTML = rows.map(x=>`<tr>
+    <td class="muted">${x.id}</td>
+    <td><span class="ticker">#${x.ticker}</span></td>
+    <td>${x.title}</td>
+    <td><span class="delta-chip ${x.roe>=0?'up':'down'}">${signed(x.roe)}</span></td>
+    <td class="hide-mobile">${fmt(x.before)}%</td>
+    <td class="${x.contribution>=0?'positive':'negative'}">${signed(x.contribution)}</td>
+    <td><strong>${fmt(x.after)}%</strong></td>
+  </tr>`).join('');
+}
+[search,signFilter,sort].forEach(el=>el.addEventListener('input',renderTable));
+renderTable();
+
+function drawChart(){
+  const svg = document.getElementById('equityChart');
+  const wrap = svg.parentElement;
+  const w = Math.max(320, wrap.clientWidth-20), h = Math.max(260, wrap.clientHeight-16);
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  const pad={l:54,r:20,t:20,b:38};
+  const points=[{id:0,ticker:'START',title:'Стартовый капитал',roe:0,after:100,before:100,contribution:0},...data];
+  const vals=points.map(x=>x.after);
+  const min=Math.floor((Math.min(...vals)-8)/10)*10;
+  const max=Math.ceil((Math.max(...vals)+8)/10)*10;
+  const x=i=>pad.l+i*(w-pad.l-pad.r)/(points.length-1);
+  const y=v=>pad.t+(max-v)*(h-pad.t-pad.b)/(max-min);
+  let path=''; points.forEach((p,i)=>path+=(i?' L':'M')+x(i).toFixed(2)+' '+y(p.after).toFixed(2));
+  const area=path+` L ${x(points.length-1)} ${h-pad.b} L ${x(0)} ${h-pad.b} Z`;
+  const ticks=5;
+  let grid='';
+  for(let i=0;i<=ticks;i++){ const v=min+(max-min)*i/ticks; const yy=y(v); grid+=`<line x1="${pad.l}" y1="${yy}" x2="${w-pad.r}" y2="${yy}" stroke="var(--g-color-line-generic)"/><text x="${pad.l-9}" y="${yy+4}" fill="var(--g-color-text-hint)" font-size="11" text-anchor="end">${fmt(v,0)}%</text>`; }
+  for(let i=0;i<=4;i++){ const idx=Math.round((points.length-1)*i/4); const xx=x(idx); grid+=`<text x="${xx}" y="${h-12}" fill="var(--g-color-text-hint)" font-size="11" text-anchor="middle">${idx===0?'Старт':'#'+idx}</text>`; }
+  const zeroY=y(100);
+  svg.innerHTML=`
+  <defs>
+    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--g-color-accent-brand)" stop-opacity=".30"/><stop offset="1" stop-color="var(--g-color-accent-brand)" stop-opacity="0"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  ${grid}
+  <line x1="${pad.l}" y1="${zeroY}" x2="${w-pad.r}" y2="${zeroY}" stroke="var(--g-color-text-hint)" stroke-dasharray="4 5" opacity=".6"/>
+  <path d="${area}" fill="url(#areaGrad)"/>
+  <path d="${path}" fill="none" stroke="var(--g-color-accent-brand)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow)"/>
+  <g id="hoverLayer"></g>
+  <rect id="capture" x="${pad.l}" y="${pad.t}" width="${w-pad.l-pad.r}" height="${h-pad.t-pad.b}" fill="transparent" style="cursor:crosshair"/>
+  `;
+  const capture=svg.querySelector('#capture'); const hover=svg.querySelector('#hoverLayer'); const tooltip=document.getElementById('tooltip');
+  const update=(ev)=>{
+    const rect=svg.getBoundingClientRect(); const sx=(ev.clientX-rect.left)*w/rect.width; let idx=Math.round((sx-pad.l)*(points.length-1)/(w-pad.l-pad.r)); idx=Math.max(0,Math.min(points.length-1,idx)); const p=points[idx]; const xx=x(idx), yy=y(p.after);
+    hover.innerHTML=`<line x1="${xx}" y1="${pad.t}" x2="${xx}" y2="${h-pad.b}" stroke="var(--g-color-text-secondary)" stroke-dasharray="3 4"/><circle cx="${xx}" cy="${yy}" r="5" fill="var(--g-color-base-generic)" stroke="var(--g-color-accent-brand)" stroke-width="3"/>`;
+    tooltip.style.display='block';
+    tooltip.innerHTML=idx===0?`<strong>Старт</strong>Капитал: 100,000%`:`<strong>#${p.ticker} · ${p.title}</strong><span class="${p.roe>=0?'positive':'negative'}">ROE: ${signed(p.roe)}</span><br>Вклад: ${signed(p.contribution)}<br>Капитал: ${fmt(p.after)}%`;
+    const px=ev.clientX-wrap.getBoundingClientRect().left+14; const py=ev.clientY-wrap.getBoundingClientRect().top-20;
+    tooltip.style.left=Math.min(px,wrap.clientWidth-220)+'px'; tooltip.style.top=Math.max(8,py)+'px';
+  };
+  capture.addEventListener('mousemove',update); capture.addEventListener('mouseleave',()=>{hover.innerHTML='';tooltip.style.display='none';});
+  capture.addEventListener('touchmove',e=>{e.preventDefault();update(e.touches[0]);},{passive:false});
+}
+window.addEventListener('resize',drawChart); drawChart();
+
+document.getElementById('themeToggle').addEventListener('click',()=>{
+  const root=document.documentElement; const light=root.dataset.theme==='light'; root.dataset.theme=light?'dark':'light';
+  document.getElementById('themeToggle').textContent=light?'Светлая тема':'Тёмная тема'; setTimeout(drawChart,0);
+});
+
+document.getElementById('downloadCsv').addEventListener('click',()=>{
+  const lines=[['№','Тикер','Событие','ROE %','Капитал до %','Вклад %','Капитал после %'],...data.map(x=>[x.id,x.ticker,x.title,x.roe,x.before,x.contribution,x.after])];
+  const csv='\ufeff'+lines.map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(';')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='roe-capital-growth.csv'; a.click(); URL.revokeObjectURL(a.href);
+});
+</script>
+</body>
+</html>

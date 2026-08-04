@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>ROE — прирост капитала от 100%</title>
+    <script>
+      // Ставим тему до первой отрисовки, иначе светлая тема мигает тёмным фоном.
+      try {
+        if (localStorage.getItem('roe-theme') === 'light') {
+          document.documentElement.dataset.theme = 'light';
+        }
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">R</div>
+          <div>
+            <h1>ROE / капитал</h1>
+            <p>Последовательная капитализация каждой фиксации</p>
+          </div>
+        </div>
+        <div class="actions">
+          <a class="g-button" href="/admin">Админка</a>
+          <button class="g-button" id="downloadCsv">Экспорт CSV</button>
+          <button class="g-button" id="themeToggle" aria-label="Сменить тему">Светлая тема</button>
+        </div>
+      </header>
+
+      <div class="state-message" id="loadStatus" role="status">Загружаю сделки…</div>
+
+      <section class="hero">
+        <div class="eyebrow" id="heroEyebrow">Капитал после фиксаций</div>
+        <div class="hero-row">
+          <div>
+            <div class="hero-value"><span id="heroCapital">—</span><small>% от старта</small></div>
+            <div class="hero-copy">
+              Стартовая база — 100%. Каждый опубликованный ROE трактуется как отношение результата
+              операции к капиталу <strong>до её закрытия</strong>, после чего применяется к уже
+              изменившейся базе.
+            </div>
+            <div class="pills">
+              <span class="pill ok">Сложный процент включён</span>
+              <span class="pill">ROE от капитала до закрытия</span>
+              <span class="pill">Порядок — как в сообщениях</span>
+            </div>
+          </div>
+          <div class="hero-side">
+            <div class="mini">
+              <div class="mini-label">Чистый прирост</div>
+              <div class="mini-value" id="heroReturn">—</div>
+            </div>
+            <div class="mini">
+              <div class="mini-label">Пиковый капитал</div>
+              <div class="mini-value" id="heroPeak">—</div>
+            </div>
+            <div class="mini">
+              <div class="mini-label">Плюсовых фиксаций</div>
+              <div class="mini-value" id="heroWins">—</div>
+            </div>
+            <div class="mini">
+              <div class="mini-label">Минусовых фиксаций</div>
+              <div class="mini-value negative" id="heroLosses">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid-cards">
+        <div class="card">
+          <div class="card-label">Сумма ROE</div>
+          <div class="card-value" id="cardRoeSum">—</div>
+          <div class="card-note">Без реинвестирования</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Сложный результат</div>
+          <div class="card-value" id="cardCompound">—</div>
+          <div class="card-note">Разница от базы 100%</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Макс. просадка</div>
+          <div class="card-value negative" id="cardDrawdown">—</div>
+          <div class="card-note">От локального пика</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Win rate</div>
+          <div class="card-value" id="cardWinRate">—</div>
+          <div class="card-note" id="cardWinRateNote">—</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Медиана ROE</div>
+          <div class="card-value" id="cardMedian">—</div>
+          <div class="card-note">На одну фиксацию</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Всего фиксаций</div>
+          <div class="card-value" id="cardCount">—</div>
+          <div class="card-note">Записей в базе</div>
+        </div>
+      </section>
+
+      <section class="layout">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Кривая капитала</div>
+              <div class="panel-subtitle">
+                Ось X — даты фиксаций. Наведи курсор на точку, чтобы увидеть сделку и капитал после
+                неё
+              </div>
+            </div>
+            <div class="pills-inline">
+              <div class="pill" id="periodLabel">—</div>
+              <div class="pill" id="rangeLabel">—</div>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <svg id="equityChart" role="img" aria-label="График капитала"></svg>
+            <div class="chart-tooltip" id="tooltip"></div>
+          </div>
+        </div>
+        <div class="side-stack">
+          <div class="panel compare">
+            <div class="panel-title">Простое сложение vs капитализация</div>
+            <div class="panel-subtitle">Одинаковые ROE дают разный итог</div>
+            <div class="compare-row">
+              <div class="compare-top">
+                <span>Простое сложение</span><strong id="compareSimple">—</strong>
+              </div>
+              <div class="bar"><i id="barSimple" style="width: 0%"></i></div>
+            </div>
+            <div class="compare-row">
+              <div class="compare-top">
+                <span>Сложный процент</span><strong id="compareCompound">—</strong>
+              </div>
+              <div class="bar"><i class="compound" id="barCompound" style="width: 0%"></i></div>
+            </div>
+            <div class="formula">
+              <code>Kₙ = Kₙ₋₁ × (1 + ROEₙ / 100)</code><br />ROE относится к капиталу перед
+              закрытием операции: рост со 100 до 110 соответствует +10% ROE. Следующая операция +10%
+              уже увеличит капитал со 110 до 121.
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Статистика фиксаций</div>
+                <div class="panel-subtitle">По знаку фактического ROE</div>
+              </div>
+            </div>
+            <div class="stat-list">
+              <div class="stat-row"><span>Средний ROE</span><strong id="statAvg">—</strong></div>
+              <div class="stat-row">
+                <span>Средний плюс</span><strong class="positive" id="statAvgWin">—</strong>
+              </div>
+              <div class="stat-row">
+                <span>Средний минус</span><strong class="negative" id="statAvgLoss">—</strong>
+              </div>
+              <div class="stat-row">
+                <span>Лучшая фиксация</span><strong class="positive" id="statBest">—</strong>
+              </div>
+              <div class="stat-row">
+                <span>Худшая фиксация</span><strong class="negative" id="statWorst">—</strong>
+              </div>
+              <div class="stat-row">
+                <span>Пик перед просадкой</span><strong id="statPeak">—</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Все фиксации</div>
+            <div class="panel-subtitle">
+              Вклад в капитал рассчитан от текущей базы перед каждой операцией
+            </div>
+          </div>
+          <div class="pill" id="rowsCount">—</div>
+        </div>
+        <div class="controls">
+          <input class="g-input" id="search" placeholder="Поиск по тикеру или описанию" />
+          <label class="control-date">
+            <span>с</span>
+            <input class="g-input" id="dateFrom" type="date" aria-label="Дата с" />
+          </label>
+          <label class="control-date">
+            <span>по</span>
+            <input class="g-input" id="dateTo" type="date" aria-label="Дата по" />
+          </label>
+          <select class="g-select" id="signFilter">
+            <option value="all">Все результаты</option>
+            <option value="positive">Только плюс</option>
+            <option value="negative">Только минус</option>
+          </select>
+          <select class="g-select" id="sort">
+            <option value="order">По порядку</option>
+            <option value="date-desc">Дата: сначала новые</option>
+            <option value="date-asc">Дата: сначала старые</option>
+            <option value="roe-desc">ROE: сначала высокий</option>
+            <option value="roe-asc">ROE: сначала низкий</option>
+            <option value="capital-desc">Капитал: по убыванию</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Инструмент</th>
+                <th>Дата</th>
+                <th>Событие</th>
+                <th>ROE</th>
+                <th class="hide-mobile">Капитал до</th>
+                <th>Вклад в капитал</th>
+                <th>Капитал после</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+      <div class="footer-note">
+        Расчёт иллюстративный: комиссии, налоги, проскальзывание, пополнения и выводы не учтены.
+      </div>
+    </div>
+    <script type="module" src="/src/dashboard/main.ts"></script>
+  </body>
+</html>
