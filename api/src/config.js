@@ -27,4 +27,5 @@ export const config = {
     secret: required('SESSION_SECRET'),
     ttlMs: positiveNumber('SESSION_TTL_HOURS', 12) * 60 * 60 * 1000,
   },
+  tgSyncUrl: process.env.TG_SYNC_URL?.trim() || 'http://tg-sync:3010',
 };

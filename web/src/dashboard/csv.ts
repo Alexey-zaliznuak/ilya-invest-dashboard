@@ -17,7 +17,7 @@ export function downloadCsv(series: ComputedTrade[]): void {
   const rows = series.map((row) => [
     row.index + 1,
     row.ticker,
-    row.tradeDate ?? '',
+    row.tradeDatetime ?? '',
     row.title,
     row.roe,
     row.before,

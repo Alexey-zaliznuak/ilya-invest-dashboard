@@ -1,10 +1,10 @@
+import { fromDatetimeLocalValue, toDatetimeLocalValue } from '../lib/format';
 import { requireElement } from '../lib/dom';
 import type { Trade, TradeDraft } from '../lib/types';
 
 export interface TradeFormElements {
   form: HTMLFormElement;
-  seq: HTMLInputElement;
-  tradeDate: HTMLInputElement;
+  tradeDatetime: HTMLInputElement;
   ticker: HTMLInputElement;
   title: HTMLInputElement;
   roe: HTMLInputElement;
@@ -23,11 +23,10 @@ export interface TradeForm {
 
 export function collectDraft(elements: TradeFormElements): TradeDraft {
   return {
-    seq: elements.seq.value.trim() === '' ? null : Number(elements.seq.value),
     ticker: elements.ticker.value.trim(),
     title: elements.title.value.trim(),
     roe: Number(elements.roe.value.replace(',', '.')),
-    tradeDate: elements.tradeDate.value === '' ? null : elements.tradeDate.value,
+    tradeDatetime: fromDatetimeLocalValue(elements.tradeDatetime.value),
   };
 }
 
@@ -49,8 +48,7 @@ export function bindTradeForm(
     },
     startEdit(trade) {
       editingId = trade.id;
-      elements.seq.value = String(trade.seq);
-      elements.tradeDate.value = trade.tradeDate ?? '';
+      elements.tradeDatetime.value = toDatetimeLocalValue(trade.tradeDatetime);
       elements.ticker.value = trade.ticker;
       elements.title.value = trade.title;
       elements.roe.value = String(trade.roe);
@@ -86,8 +84,7 @@ export function bindTradeForm(
 
 export const readFormElements = (): TradeFormElements => ({
   form: requireElement<HTMLFormElement>('#tradeForm'),
-  seq: requireElement<HTMLInputElement>('#fieldSeq'),
-  tradeDate: requireElement<HTMLInputElement>('#fieldDate'),
+  tradeDatetime: requireElement<HTMLInputElement>('#fieldDatetime'),
   ticker: requireElement<HTMLInputElement>('#fieldTicker'),
   title: requireElement<HTMLInputElement>('#fieldTitle'),
   roe: requireElement<HTMLInputElement>('#fieldRoe'),

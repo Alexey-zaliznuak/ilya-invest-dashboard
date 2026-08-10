@@ -1,5 +1,5 @@
 import { escapeHtml } from '../lib/dom';
-import { fmt, formatDate, pluralize, signed } from '../lib/format';
+import { datePart, fmt, formatDateTime, pluralize, signed } from '../lib/format';
 import type { ComputedTrade } from '../lib/types';
 
 type SignFilter = 'all' | 'positive' | 'negative';
@@ -12,15 +12,17 @@ const comparators: Record<SortMode, (a: ComputedTrade, b: ComputedTrade) => numb
   'roe-desc': (a, b) => b.roe - a.roe,
   'roe-asc': (a, b) => a.roe - b.roe,
   'capital-desc': (a, b) => b.after - a.after,
-  // ISO-даты сравниваем как строки; сделки без даты уходят в конец списка.
-  'date-desc': (a, b) => (b.tradeDate ?? '').localeCompare(a.tradeDate ?? '') || a.index - b.index,
-  'date-asc': (a, b) => (a.tradeDate ?? '9999').localeCompare(b.tradeDate ?? '9999') || a.index - b.index,
+  // ISO datetime сравниваем как строки; сделки без даты уходят в конец списка.
+  'date-desc': (a, b) =>
+    (b.tradeDatetime ?? '').localeCompare(a.tradeDatetime ?? '') || a.index - b.index,
+  'date-asc': (a, b) =>
+    (a.tradeDatetime ?? '9999').localeCompare(b.tradeDatetime ?? '9999') || a.index - b.index,
 };
 
 const renderRow = (row: ComputedTrade): string => `<tr>
   <td class="muted">${row.index + 1}</td>
   <td><span class="ticker">#${escapeHtml(row.ticker)}</span></td>
-  <td class="muted nowrap">${formatDate(row.tradeDate)}</td>
+  <td class="muted nowrap">${formatDateTime(row.tradeDatetime)}</td>
   <td>${escapeHtml(row.title)}</td>
   <td><span class="delta-chip ${row.roe >= 0 ? 'up' : 'down'}">${signed(row.roe)}</span></td>
   <td class="hide-mobile">${fmt(row.before)}%</td>
@@ -56,12 +58,11 @@ export function createTradesTable(elements: TradesTableElements): { setData(seri
           query === '' || `${row.ticker} ${row.title}`.toLowerCase().includes(query);
         const matchesSign =
           sign === 'all' || (sign === 'positive' ? row.roe >= 0 : row.roe < 0);
+        const day = datePart(row.tradeDatetime);
         // Сделку без даты нельзя отнести к периоду, поэтому фильтр её отсекает.
         const matchesPeriod =
           (from === '' && to === '') ||
-          (row.tradeDate !== null &&
-            (from === '' || row.tradeDate >= from) &&
-            (to === '' || row.tradeDate <= to));
+          (day !== null && (from === '' || day >= from) && (to === '' || day <= to));
         return matchesQuery && matchesSign && matchesPeriod;
       })
       .sort(comparators[elements.sort.value as SortMode] ?? comparators.order);

@@ -77,19 +77,15 @@
         <section class="panel editor">
           <div class="panel-title" id="formMode">Новая сделка</div>
           <div class="panel-subtitle">
-            Дубли по тройке «дата + тикер + ROE» база не примет — повторная отправка вернёт ошибку.
+            Дубли по тройке «дата/время + тикер + ROE» база не примет — повторная отправка вернёт ошибку.
+            Порядок капитализации — по дате/времени.
           </div>
           <form id="tradeForm">
-            <div class="form-grid">
+            <div class="form-grid form-grid-datetime">
               <div class="field">
-                <label for="fieldSeq">Порядок</label>
-                <input class="g-input" id="fieldSeq" type="number" min="1" step="1" placeholder="авто" />
-                <span class="field-hint">Позиция в цепочке</span>
-              </div>
-              <div class="field">
-                <label for="fieldDate">Дата</label>
-                <input class="g-input" id="fieldDate" type="date" />
-                <span class="field-hint">Можно не указывать</span>
+                <label for="fieldDatetime">Дата и время</label>
+                <input class="g-input" id="fieldDatetime" type="datetime-local" />
+                <span class="field-hint">MSK, можно не указывать</span>
               </div>
               <div class="field">
                 <label for="fieldTicker">Тикер</label>
@@ -111,11 +107,97 @@
           </form>
         </section>
 
+        <section class="panel editor" id="tgSyncPanel">
+          <div class="panel-title">Автосбор из Telegram</div>
+          <div class="panel-subtitle">
+            Контейнер tg-sync читает чат по расписанию, разбирает закрытые сделки через OpenRouter и
+            перезаливает их в базу.
+          </div>
+          <form id="tgSyncForm">
+            <div class="form-grid form-grid-sync">
+              <div class="field">
+                <label for="tgEnabled">Включён</label>
+                <label class="checkbox-row">
+                  <input id="tgEnabled" type="checkbox" />
+                  <span>Запускать по cron</span>
+                </label>
+              </div>
+              <div class="field">
+                <label for="tgCron">Cron</label>
+                <input class="g-input" id="tgCron" placeholder="0 * * * *" required />
+                <span class="field-hint">Минута час день месяц день_недели</span>
+              </div>
+              <div class="field">
+                <label for="tgChatId">Чат</label>
+                <input class="g-input" id="tgChatId" placeholder="-100… или @channel" maxlength="128" />
+              </div>
+              <div class="field">
+                <label for="tgTopicId">Топик</label>
+                <input class="g-input" id="tgTopicId" type="number" min="1" step="1" placeholder="необязательно" />
+                <span class="field-hint">ID форум-топика супергруппы</span>
+              </div>
+              <div class="field">
+                <label for="tgParseFrom">Дальность парсинга</label>
+                <input class="g-input" id="tgParseFrom" type="datetime-local" />
+                <span class="field-hint">Нижняя граница (MSK)</span>
+              </div>
+              <div class="field">
+                <label for="tgTimezone">Timezone</label>
+                <input class="g-input" id="tgTimezone" value="Europe/Moscow" required />
+              </div>
+              <div class="field">
+                <label for="tgRescanAll">Полный рескан</label>
+                <label class="checkbox-row">
+                  <input id="tgRescanAll" type="checkbox" />
+                  <span>Пересмотреть весь чат</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="link-resolver">
+              <div class="field">
+                <label for="tgLink">Ссылка на сообщение</label>
+                <div class="inline-row">
+                  <input
+                    class="g-input"
+                    id="tgLink"
+                    placeholder="https://t.me/c/3935021784/5/48553"
+                  />
+                  <button class="g-button" id="tgResolveLink" type="button">Разобрать</button>
+                </div>
+                <span class="field-hint">Подставит chat id и топик из t.me-ссылки</span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="g-button accent" id="tgSyncSave" type="submit">Сохранить</button>
+              <button class="g-button" id="tgSyncRun" type="button">Запустить сейчас</button>
+              <button class="g-button" id="tgLoadDialogs" type="button">Показать чаты сессии</button>
+            </div>
+          </form>
+
+          <div class="dialogs-panel" id="tgDialogsPanel" hidden>
+            <div class="panel-head">
+              <div>
+                <div class="panel-title" style="font-size: 15px">Чаты аккаунта</div>
+                <div class="panel-subtitle">Клик по строке подставит chat id в форму</div>
+              </div>
+              <input class="g-input" id="tgDialogsSearch" placeholder="Фильтр по названию" />
+            </div>
+            <div class="dialogs-list" id="tgDialogsList"></div>
+          </div>
+
+          <div class="sync-status" id="tgSyncStatus">
+            <div class="pill" id="tgSyncStatusPill">Статус: —</div>
+            <p class="sync-status-text" id="tgSyncStatusText"></p>
+          </div>
+        </section>
+
         <section class="panel">
           <div class="panel-head">
             <div>
               <div class="panel-title">Сделки в базе</div>
-              <div class="panel-subtitle">Порядок определяет последовательность капитализации</div>
+              <div class="panel-subtitle">Порядок капитализации — по дате и времени</div>
             </div>
             <div class="pill" id="capitalPreview">—</div>
           </div>
@@ -127,8 +209,7 @@
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th>Порядок</th>
-                  <th>Дата</th>
+                  <th>Дата и время</th>
                   <th>Тикер</th>
                   <th>Событие</th>
                   <th>ROE</th>

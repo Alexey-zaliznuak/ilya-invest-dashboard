@@ -3,42 +3,39 @@ import { conflict, notFound } from '../errors.js';
 
 const UNIQUE_VIOLATION = '23505';
 
-// trade_date отдаём строкой: драйвер превратил бы DATE в Date в локальной зоне
-// и день мог бы съехать на сутки.
-const COLUMNS = `id, seq, ticker, title, roe,
-                 to_char(trade_date, 'YYYY-MM-DD') AS trade_date`;
+// timestamptz отдаём ISO-строкой в UTC, чтобы фронт не зависел от TZ сервера.
+const COLUMNS = `id, ticker, title, roe,
+                 CASE
+                   WHEN trade_datetime IS NULL THEN NULL
+                   ELSE to_char(trade_datetime AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+                 END AS trade_datetime`;
 
 const mapRow = (row) => ({
   id: Number(row.id),
-  seq: Number(row.seq),
   ticker: row.ticker,
   title: row.title,
   roe: Number(row.roe),
-  tradeDate: row.trade_date,
+  tradeDatetime: row.trade_datetime,
 });
 
 export async function listTrades() {
-  const { rows } = await pool.query(`SELECT ${COLUMNS} FROM trades ORDER BY seq, id`);
+  const { rows } = await pool.query(
+    `SELECT ${COLUMNS} FROM trades ORDER BY trade_datetime NULLS FIRST, id`,
+  );
   return rows.map(mapRow);
 }
 
-async function nextSeq() {
-  const { rows } = await pool.query('SELECT COALESCE(MAX(seq), 0) + 1 AS seq FROM trades');
-  return Number(rows[0].seq);
-}
-
 export async function createTrade(input) {
-  const seq = input.seq ?? (await nextSeq());
   const { rows } = await pool.query(
-    `INSERT INTO trades (seq, ticker, title, roe, trade_date)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO trades (ticker, title, roe, trade_datetime)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT DO NOTHING
      RETURNING ${COLUMNS}`,
-    [seq, input.ticker, input.title, input.roe, input.tradeDate],
+    [input.ticker, input.title, input.roe, input.tradeDatetime],
   );
 
   if (rows.length === 0) {
-    throw conflict('Сделка с такой датой, тикером и ROE уже есть в базе');
+    throw conflict('Сделка с такими датой/временем, тикером и ROE уже есть в базе');
   }
   return mapRow(rows[0]);
 }
@@ -47,22 +44,21 @@ export async function updateTrade(id, input) {
   try {
     const { rows } = await pool.query(
       `UPDATE trades
-          SET seq = COALESCE($2, seq),
-              ticker = $3,
-              title = $4,
-              roe = $5,
-              trade_date = $6,
+          SET ticker = $2,
+              title = $3,
+              roe = $4,
+              trade_datetime = $5,
               updated_at = now()
         WHERE id = $1
       RETURNING ${COLUMNS}`,
-      [id, input.seq, input.ticker, input.title, input.roe, input.tradeDate],
+      [id, input.ticker, input.title, input.roe, input.tradeDatetime],
     );
 
     if (rows.length === 0) throw notFound('Сделка не найдена');
     return mapRow(rows[0]);
   } catch (error) {
     if (error.code === UNIQUE_VIOLATION) {
-      throw conflict('Сделка с такой датой, тикером и ROE уже есть в базе');
+      throw conflict('Сделка с такими датой/временем, тикером и ROE уже есть в базе');
     }
     throw error;
   }

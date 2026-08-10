@@ -22,12 +22,12 @@ const startPoint: ChartPoint = {
 const toPoint = (row: ComputedTrade): ChartPoint => ({
   after: row.after,
   // Без даты подписываем номером фиксации — иначе на оси появится пустое место.
-  axisLabel: row.tradeDate ? formatShortDate(row.tradeDate) : `#${row.index + 1}`,
+  axisLabel: row.tradeDatetime ? formatShortDate(row.tradeDatetime) : `#${row.index + 1}`,
   tooltip:
     `<strong>#${escapeHtml(row.ticker)}${row.title ? ` · ${escapeHtml(row.title)}` : ''}</strong>` +
     `<span class="${row.roe >= 0 ? 'positive' : 'negative'}">ROE: ${signed(row.roe)}</span><br>` +
     `Вклад: ${signed(row.contribution)}<br>Капитал: ${fmt(row.after)}%` +
-    (row.tradeDate ? `<br><span class="muted">${formatDate(row.tradeDate)}</span>` : ''),
+    (row.tradeDatetime ? `<br><span class="muted">${formatDate(row.tradeDatetime)}</span>` : ''),
 });
 
 export interface EquityChart {

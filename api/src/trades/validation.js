@@ -1,7 +1,6 @@
 import { badRequest } from '../errors.js';
 
 const ROE_SCALE = 4;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const parseTicker = (value) => {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -29,25 +28,28 @@ const parseRoe = (value) => {
   return Number(roe.toFixed(ROE_SCALE));
 };
 
-const parseTradeDate = (value) => {
+/**
+ * Принимает ISO-8601 datetime (с TZ или без). Без TZ считаем Europe/Moscow.
+ * Для совместимости допускает голую дату ГГГГ-ММ-ДД → полночь MSK.
+ */
+const parseTradeDatetime = (value) => {
   if (value === undefined || value === null || value === '') return null;
-  if (typeof value !== 'string' || !DATE_PATTERN.test(value)) {
-    throw badRequest('Дата должна быть в формате ГГГГ-ММ-ДД');
-  }
-  const date = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime()) || !date.toISOString().startsWith(value)) {
-    throw badRequest('Такой даты не существует');
-  }
-  return value;
-};
+  if (typeof value !== 'string') throw badRequest('Дата/время должны быть строкой');
 
-const parseSeq = (value) => {
-  if (value === undefined || value === null || value === '') return null;
-  const seq = Number(value);
-  if (!Number.isInteger(seq) || seq < 1 || seq > 1_000_000) {
-    throw badRequest('Порядковый номер должен быть целым числом от 1 до 1 000 000');
+  const trimmed = value.trim();
+  let candidate = trimmed;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    candidate = `${trimmed}T00:00:00+03:00`;
+  } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+    candidate = `${trimmed}${trimmed.length === 16 ? ':00' : ''}+03:00`;
   }
-  return seq;
+
+  const date = new Date(candidate);
+  if (Number.isNaN(date.getTime())) {
+    throw badRequest('Дата/время должны быть в формате ISO-8601');
+  }
+  return date.toISOString();
 };
 
 export function parseTradeInput(body) {
@@ -55,12 +57,13 @@ export function parseTradeInput(body) {
     throw badRequest('Ожидается JSON-объект со сделкой');
   }
 
+  const rawDatetime = body.tradeDatetime ?? body.datetime ?? body.tradeDate ?? body.date;
+
   return {
-    seq: parseSeq(body.seq),
     ticker: parseTicker(body.ticker),
     title: parseTitle(body.title),
     roe: parseRoe(body.roe),
-    tradeDate: parseTradeDate(body.tradeDate),
+    tradeDatetime: parseTradeDatetime(rawDatetime),
   };
 }
 

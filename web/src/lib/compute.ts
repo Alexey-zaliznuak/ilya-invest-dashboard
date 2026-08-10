@@ -56,9 +56,9 @@ export function computeMetrics(series: ComputedTrade[]): Metrics {
     }
   }
 
-  // Даты в ISO-формате, поэтому лексикографическая сортировка совпадает с хронологической.
+  // ISO datetime лексикографически совпадает с хронологическим порядком.
   const dates = series
-    .map((row) => row.tradeDate)
+    .map((row) => row.tradeDatetime)
     .filter((date): date is string => date !== null)
     .sort();
 

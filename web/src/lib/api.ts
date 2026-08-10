@@ -1,5 +1,12 @@
 import { clearSession, loadSession, saveSession, type AdminSession } from './session';
-import type { Trade, TradeDraft } from './types';
+import type {
+  ResolvedTelegramLink,
+  Trade,
+  TradeDraft,
+  TgDialog,
+  TgSyncSettings,
+  TgSyncStatus,
+} from './types';
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
 
@@ -99,3 +106,58 @@ export async function updateTrade(id: number, draft: TradeDraft): Promise<Trade>
 
 export const deleteTrade = (id: number): Promise<void> =>
   request(`/trades/${id}`, { method: 'DELETE', auth: true });
+
+export async function fetchTgSyncSettings(): Promise<TgSyncSettings> {
+  const { settings } = await request<{ settings: TgSyncSettings }>('/settings/tg-sync', {
+    auth: true,
+  });
+  return settings;
+}
+
+export async function saveTgSyncSettings(
+  draft: Omit<
+    TgSyncSettings,
+    'runRequested' | 'lastRunAt' | 'lastRunStatus' | 'lastRunError' | 'lastRunStats' | 'updatedAt'
+  >,
+): Promise<TgSyncSettings> {
+  const { settings } = await request<{ settings: TgSyncSettings }>('/settings/tg-sync', {
+    method: 'PUT',
+    body: draft,
+    auth: true,
+  });
+  return settings;
+}
+
+export async function requestTgSyncRun(): Promise<TgSyncSettings> {
+  const { settings } = await request<{ settings: TgSyncSettings }>('/settings/tg-sync/run', {
+    method: 'POST',
+    auth: true,
+  });
+  return settings;
+}
+
+export async function fetchTgSyncStatus(): Promise<TgSyncStatus> {
+  const { status } = await request<{ status: TgSyncStatus }>('/settings/tg-sync/status', {
+    auth: true,
+  });
+  return status;
+}
+
+export async function resolveTelegramLink(url: string): Promise<ResolvedTelegramLink> {
+  const { resolved } = await request<{ resolved: ResolvedTelegramLink }>(
+    '/settings/tg-sync/resolve-link',
+    {
+      method: 'POST',
+      body: { url },
+      auth: true,
+    },
+  );
+  return resolved;
+}
+
+export async function fetchTgDialogs(): Promise<TgDialog[]> {
+  const { dialogs } = await request<{ dialogs: TgDialog[] }>('/settings/tg-sync/dialogs', {
+    auth: true,
+  });
+  return dialogs;
+}

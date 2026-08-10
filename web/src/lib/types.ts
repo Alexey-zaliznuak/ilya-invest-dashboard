@@ -1,21 +1,19 @@
 export interface Trade {
   id: number;
-  seq: number;
   ticker: string;
   title: string;
   /** ROE фиксации в процентах от капитала до её закрытия. */
   roe: number;
-  /** Дата в формате ГГГГ-ММ-ДД либо null, если она неизвестна. */
-  tradeDate: string | null;
+  /** ISO-8601 datetime либо null, если момент неизвестен. */
+  tradeDatetime: string | null;
 }
 
-/** Форма ввода: порядковый номер может быть пустым — тогда сделка встаёт в конец. */
+/** Форма ввода: datetime можно оставить пустым. */
 export interface TradeDraft {
-  seq: number | null;
   ticker: string;
   title: string;
   roe: number;
-  tradeDate: string | null;
+  tradeDatetime: string | null;
 }
 
 export interface ComputedTrade extends Trade {
@@ -48,4 +46,43 @@ export interface Metrics {
   /** Границы периода по заполненным датам сделок. */
   firstDate: string | null;
   lastDate: string | null;
+}
+
+export interface TgSyncSettings {
+  enabled: boolean;
+  cron: string;
+  chatId: string;
+  topicId: number | null;
+  parseFrom: string | null;
+  timezone: string;
+  rescanAll: boolean;
+  runRequested: boolean;
+  lastRunAt: string | null;
+  lastRunStatus: string;
+  lastRunError: string;
+  lastRunStats: Record<string, unknown>;
+  updatedAt: string;
+}
+
+export interface TgDialog {
+  id: string;
+  title: string;
+  username: string | null;
+  kind: string;
+  unread: number;
+}
+
+export interface ResolvedTelegramLink {
+  chatId: string;
+  topicId: number | null;
+  messageId: number | null;
+  kind: string;
+}
+
+export interface TgSyncStatus {
+  runRequested: boolean;
+  lastRunAt: string | null;
+  lastRunStatus: string;
+  lastRunError: string;
+  lastRunStats: Record<string, unknown>;
 }

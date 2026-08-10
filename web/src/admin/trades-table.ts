@@ -1,14 +1,13 @@
 import { escapeHtml } from '../lib/dom';
-import { formatDate, pluralize, signed } from '../lib/format';
+import { formatDateTime, pluralize, signed } from '../lib/format';
 import type { Trade } from '../lib/types';
 
-const COLUMN_COUNT = 6;
+const COLUMN_COUNT = 5;
 
 const renderRow = (trade: Trade, editingId: number | null): string => `<tr${
   trade.id === editingId ? ' class="editing"' : ''
 }>
-  <td class="muted">${trade.seq}</td>
-  <td class="muted">${formatDate(trade.tradeDate)}</td>
+  <td class="muted nowrap">${formatDateTime(trade.tradeDatetime)}</td>
   <td><span class="ticker">#${escapeHtml(trade.ticker)}</span></td>
   <td>${escapeHtml(trade.title) || '<span class="muted">—</span>'}</td>
   <td><span class="delta-chip ${trade.roe >= 0 ? 'up' : 'down'}">${signed(trade.roe)}</span></td>

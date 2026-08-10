@@ -69,14 +69,114 @@
   margin-top: 16px;
 }
 
+.form-grid-datetime {
+  grid-template-columns: 210px minmax(120px, 1fr) minmax(200px, 2fr) 130px;
+}
+
+.form-grid-sync {
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+}
+
 .form-grid .field {
   margin-bottom: 0;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  color: var(--g-color-text-primary);
+  font-size: 13px;
 }
 
 .form-actions {
   display: flex;
   gap: 8px;
   margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.sync-status {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.sync-status-text {
+  margin: 0;
+  color: var(--g-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.link-resolver {
+  margin-top: 16px;
+}
+
+.inline-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-row .g-input {
+  flex: 1;
+}
+
+.dialogs-panel {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.dialogs-list {
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: 10px;
+  background: var(--g-color-base-generic);
+}
+
+.dialog-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--g-color-line-generic);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dialog-row:last-child {
+  border-bottom: 0;
+}
+
+.dialog-row:hover {
+  background: var(--g-color-base-simple-hover);
+}
+
+.dialog-title {
+  font-size: 13px;
+}
+
+.dialog-meta {
+  color: var(--g-color-text-secondary);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.dialog-id {
+  color: var(--g-color-text-hint);
+  font-size: 11px;
+  align-self: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-table-wrap {
@@ -139,13 +239,17 @@ tr.editing {
 }
 
 @media (max-width: 900px) {
-  .form-grid {
+  .form-grid,
+  .form-grid-datetime,
+  .form-grid-sync {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 520px) {
-  .form-grid {
+  .form-grid,
+  .form-grid-datetime,
+  .form-grid-sync {
     grid-template-columns: 1fr;
   }
 }

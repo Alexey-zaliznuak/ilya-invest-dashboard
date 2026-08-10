@@ -3,6 +3,7 @@ import express from 'express';
 import { authRouter } from './auth/router.js';
 import { HttpError } from './errors.js';
 import { pool } from './db.js';
+import { settingsRouter } from './settings/router.js';
 import { tradesRouter } from './trades/router.js';
 
 export function createApp() {
@@ -24,6 +25,7 @@ export function createApp() {
 
   app.use('/api/auth', authRouter);
   app.use('/api/trades', tradesRouter);
+  app.use('/api/settings', settingsRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'not_found', message: 'Такого эндпоинта нет' });

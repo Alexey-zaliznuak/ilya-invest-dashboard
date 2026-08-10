@@ -1,0 +1,6 @@
+psycopg[binary]==3.2.9
+telethon==1.40.0
+httpx==0.28.1
+croniter==6.0.0
+pydantic==2.11.7
+aiohttp==3.12.15

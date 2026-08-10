@@ -17,6 +17,7 @@ import { clearSession, loadSession } from '../lib/session';
 import { initTheme } from '../lib/theme';
 import type { Trade } from '../lib/types';
 import { setupLoginForm } from './login';
+import { bindTgSyncPanel, readTgSyncElements } from './tg-sync-settings';
 import { showToast } from './toast';
 import { bindTradeForm, readFormElements } from './trade-form';
 import { createAdminTable } from './trades-table';
@@ -69,6 +70,8 @@ const form = bindTradeForm(formElements, async (draft, editingId) => {
   }
 });
 
+const tgSync = bindTgSyncPanel(readTgSyncElements(), reportError, (message) => showToast(message));
+
 function reportError(error: unknown, fallback: string): void {
   if (error instanceof ApiError && error.status === 401) {
     showAuth();
@@ -106,6 +109,7 @@ async function refresh(): Promise<void> {
 
 function showAuth(): void {
   clearSession();
+  tgSync.stopPolling();
   authView.hidden = false;
   appView.hidden = true;
   logoutButton.hidden = true;
@@ -119,6 +123,8 @@ function showApp(adminLogin: string): void {
   whoami.hidden = false;
   whoami.textContent = adminLogin;
   void refresh();
+  void tgSync.load().catch((error) => reportError(error, 'Не удалось загрузить настройки tg-sync'));
+  tgSync.startPolling();
 }
 
 initTheme(document.querySelector<HTMLElement>('#themeToggle'));

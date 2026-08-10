@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Заливает исторические сделки в Postgres по указанному DATABASE_URL.
+"""Опциональный импорт сделок из JSON (бекап/разовый seed).
 
-Скрипт идемпотентный: сделка с такой же тройкой «дата + тикер + ROE» второй раз
+Не часть штатного рантайма: при `docker compose up` не запускается.
+Основной поток данных — tg-sync и админка.
+
+Скрипт идемпотентный: сделка с такой же тройкой «datetime + тикер + ROE» второй раз
 не вставится, поэтому запуск можно повторять сколько угодно раз.
 """
 
@@ -13,47 +16,70 @@ import os
 import sys
 import time
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import psycopg
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_DATA_FILE = ROOT / "trades.json"
 DEFAULT_SCHEMA_FILE = ROOT.parent / "db" / "schema.sql"
+MSK = ZoneInfo("Europe/Moscow")
 
 # Масштаб колонки trades.roe: приводим значения заранее, иначе округление на
 # стороне базы могло бы разойтись с проверкой дублей.
 ROE_SCALE = Decimal("0.0001")
 
 INSERT_SQL = """
-    INSERT INTO trades (seq, ticker, title, roe, trade_date)
-    VALUES (%s, %s, %s, %s, %s)
+    INSERT INTO trades (ticker, title, roe, trade_datetime)
+    VALUES (%s, %s, %s, %s)
     ON CONFLICT DO NOTHING
 """
 
-
 @dataclass(frozen=True)
 class Trade:
-    seq: int
     ticker: str
     title: str
     roe: Decimal
-    trade_date: date | None
+    trade_datetime: datetime | None
 
     @property
-    def natural_key(self) -> tuple[date | None, str, Decimal]:
-        return (self.trade_date, self.ticker, self.roe)
+    def natural_key(self) -> tuple[datetime | None, str, Decimal]:
+        return (self.trade_datetime, self.ticker, self.roe)
 
     def describe(self) -> str:
-        when = self.trade_date.isoformat() if self.trade_date else "без даты"
-        return f"#{self.seq} {self.ticker} ({when}) ROE {self.roe}%"
+        when = self.trade_datetime.isoformat() if self.trade_datetime else "без даты"
+        return f"{self.ticker} ({when}) ROE {self.roe}%"
 
 
 class SeedError(Exception):
     """Ошибка входных данных или подключения, о которой достаточно сообщить текстом."""
+
+
+def parse_datetime(raw: Any, position: int) -> datetime | None:
+    if raw is None or raw == "":
+        return None
+    text = str(raw).strip()
+    if not text:
+        return None
+
+    if len(text) == 10 and text[4] == "-" and text[7] == "-":
+        try:
+            return datetime.strptime(text, "%Y-%m-%d").replace(tzinfo=MSK)
+        except ValueError as error:
+            raise SeedError(f"Запись #{position}: некорректная дата") from error
+
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise SeedError(f"Запись #{position}: datetime должен быть ISO-8601") from error
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=MSK)
+    return parsed.astimezone(timezone.utc)
 
 
 def parse_trade(payload: Any, position: int) -> Trade:
@@ -69,20 +95,18 @@ def parse_trade(payload: Any, position: int) -> Trade:
     except (KeyError, InvalidOperation) as error:
         raise SeedError(f"Запись #{position}: некорректный ROE ({error})") from error
 
-    raw_date = payload.get("date") or payload.get("tradeDate")
-    trade_date: date | None = None
-    if raw_date:
-        try:
-            trade_date = datetime.strptime(str(raw_date), "%Y-%m-%d").date()
-        except ValueError as error:
-            raise SeedError(f"Запись #{position}: дата должна быть в формате ГГГГ-ММ-ДД") from error
+    raw_dt = (
+        payload.get("datetime")
+        or payload.get("tradeDatetime")
+        or payload.get("date")
+        or payload.get("tradeDate")
+    )
 
     return Trade(
-        seq=int(payload.get("seq", position)),
         ticker=ticker,
         title=str(payload.get("title", "")).strip(),
         roe=roe,
-        trade_date=trade_date,
+        trade_datetime=parse_datetime(raw_dt, position),
     )
 
 
@@ -102,7 +126,7 @@ def load_trades(path: Path) -> list[Trade]:
 
 def drop_internal_duplicates(trades: list[Trade]) -> tuple[list[Trade], list[Trade]]:
     """Отбрасывает совпадения по ключу внутри самого файла, оставляя первое вхождение."""
-    seen: set[tuple[date | None, str, Decimal]] = set()
+    seen: set[tuple[datetime | None, str, Decimal]] = set()
     unique: list[Trade] = []
     duplicates: list[Trade] = []
 
@@ -147,7 +171,7 @@ def insert_trades(
         for trade in trades:
             cursor.execute(
                 INSERT_SQL,
-                (trade.seq, trade.ticker, trade.title, trade.roe, trade.trade_date),
+                (trade.ticker, trade.title, trade.roe, trade.trade_datetime),
             )
             if cursor.rowcount == 1:
                 inserted += 1

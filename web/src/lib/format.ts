@@ -25,21 +25,45 @@ export const dash = '—';
 export const orDash = (value: number | null, render: (value: number) => string): string =>
   value === null ? dash : render(value);
 
+/** Дата (день) из ISO datetime или голой даты. */
+export const datePart = (iso: string | null): string | null => {
+  if (!iso) return null;
+  return iso.slice(0, 10);
+};
+
 export const formatDate = (iso: string | null): string => {
+  const day = datePart(iso);
+  if (!day) return dash;
+  const [year, month, dayNum] = day.split('-');
+  return `${dayNum}.${month}.${year}`;
+};
+
+export const formatDateTime = (iso: string | null): string => {
   if (!iso) return dash;
-  const [year, month, day] = iso.split('-');
-  return `${day}.${month}.${year}`;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return formatDate(iso);
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 };
 
 /** Короткий вариант для подписей оси: там не хватает места на полный год. */
 export const formatShortDate = (iso: string): string => {
-  const [year, month, day] = iso.split('-');
-  return `${day}.${month}.${year.slice(2)}`;
+  const day = datePart(iso) ?? iso;
+  const [year, month, dayNum] = day.split('-');
+  return `${dayNum}.${month}.${year.slice(2)}`;
 };
 
 export const formatPeriod = (from: string | null, to: string | null): string => {
   if (!from || !to) return dash;
-  return from === to ? formatDate(from) : `${formatDate(from)} — ${formatDate(to)}`;
+  const fromDay = datePart(from) ?? from;
+  const toDay = datePart(to) ?? to;
+  return fromDay === toDay ? formatDate(fromDay) : `${formatDate(fromDay)} — ${formatDate(toDay)}`;
 };
 
 export const pluralize = (count: number, forms: [string, string, string]): string => {
@@ -49,4 +73,34 @@ export const pluralize = (count: number, forms: [string, string, string]): strin
   if (mod10 === 1) return forms[0];
   if (mod10 >= 2 && mod10 <= 4) return forms[1];
   return forms[2];
+};
+
+/** Значение для input[type=datetime-local] в Europe/Moscow. */
+export const toDatetimeLocalValue = (iso: string | null): string => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+};
+
+/** datetime-local → ISO с +03:00 (MSK). */
+export const fromDatetimeLocalValue = (value: string): string | null => {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    return `${value}:00+03:00`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value)) {
+    return `${value}+03:00`;
+  }
+  return value;
 };

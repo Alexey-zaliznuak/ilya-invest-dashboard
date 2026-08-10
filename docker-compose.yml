@@ -24,6 +24,7 @@ services:
     env_file: .env
     environment:
       SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-12}
+      TG_SYNC_URL: http://tg-sync:${TG_SYNC_HTTP_PORT:-3010}
     expose:
       - "${API_PORT:-3000}"
     depends_on:
@@ -51,8 +52,8 @@ services:
       api:
         condition: service_started
 
-  # Разовая задача: заливает исторические сделки в базу.
-  # Запуск: docker compose run --rm seed
+  # Опциональный импорт/бекап JSON. НЕ стартует с up — только вручную:
+  # docker compose run --rm seed
   seed:
     build:
       context: .
@@ -65,5 +66,36 @@ services:
       db:
         condition: service_healthy
 
+  # Автосбор сделок из Telegram (user-сессия + OpenRouter).
+  # Первичная авторизация: docker compose run --rm tg-sync auth
+  tg-sync:
+    build:
+      context: .
+      dockerfile: tg-sync/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      TG_SESSION_PATH: /data/session/roe
+      TG_BACKUPS_DIR: /data/backups
+      TG_WORK_DIR: /data/work
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-5.6-luna}
+      TG_SYNC_POLL_SECONDS: ${TG_SYNC_POLL_SECONDS:-20}
+      TG_SYNC_HTTP_PORT: ${TG_SYNC_HTTP_PORT:-3010}
+    expose:
+      - "${TG_SYNC_HTTP_PORT:-3010}"
+    volumes:
+      - tg-session:/data/session
+      - tg-backups:/data/backups
+      - tg-work:/data/work
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
 volumes:
   pgdata:
+  tg-session:
+  tg-backups:
+  tg-work:
