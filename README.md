@@ -41,6 +41,7 @@ docker compose run --rm tg-sync auth   # один раз: телефон + ко�
 | `TG_API_ID`, `TG_API_HASH` | Telegram user API (https://my.telegram.org) |
 | `TELEGRAM_PROXY` | SOCKS5/HTTP прокси только для Telethon (обход блокировок DC) |
 | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | разбор чата; default `openai/gpt-5.6-luna` |
+| `OPENROUTER_PROXY_URL` | HTTP-прокси только для OpenRouter (если API режется) |
 
 Подробнее про auth и volumes — [tg-sync/README.md](tg-sync/README.md).
 

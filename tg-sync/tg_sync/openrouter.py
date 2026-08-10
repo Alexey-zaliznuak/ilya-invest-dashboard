@@ -144,6 +144,7 @@ async def extract_trades_for_week(
     model: str,
     chunk: WeekChunk,
     retries: int = 2,
+    proxy_url: str = "",
 ) -> list[ClosedTrade]:
     if not api_key:
         raise RuntimeError("Не задан OPENROUTER_API_KEY")
@@ -158,8 +159,12 @@ async def extract_trades_for_week(
         "temperature": 0.1,
     }
 
+    client_kwargs: dict[str, Any] = {"timeout": 180.0}
+    if proxy_url:
+        client_kwargs["proxy"] = proxy_url
+
     last_error: Exception | None = None
-    async with httpx.AsyncClient(timeout=180.0) as client:
+    async with httpx.AsyncClient(**client_kwargs) as client:
         for attempt in range(1, retries + 2):
             try:
                 response = await client.post(

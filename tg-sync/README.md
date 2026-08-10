@@ -14,6 +14,12 @@
 TELEGRAM_PROXY=http://tg-proxy:pass@telegram-proxy.messengers.aheron.pro:3128
 ```
 
+   Если OpenRouter отдаёт 403 со стенда — отдельный HTTP-прокси только для LLM:
+
+```env
+OPENROUTER_PROXY_URL=http://user:pass@host:port
+```
+
 4. Запустите интерактивный логин (один раз):
 
 ```bash

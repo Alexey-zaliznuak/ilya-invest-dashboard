@@ -39,6 +39,7 @@ class Config:
     openrouter_api_key: str
     openrouter_model: str
     openrouter_base_url: str
+    openrouter_proxy_url: str
     poll_seconds: float
     llm_retries: int
     http_host: str
@@ -65,6 +66,7 @@ def load_config() -> Config:
         openrouter_base_url=os.environ.get(
             "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
         ).rstrip("/"),
+        openrouter_proxy_url=os.environ.get("OPENROUTER_PROXY_URL", "").strip(),
         poll_seconds=float(os.environ.get("TG_SYNC_POLL_SECONDS", "20")),
         llm_retries=int(os.environ.get("TG_SYNC_LLM_RETRIES", "2")),
         http_host=os.environ.get("TG_SYNC_HTTP_HOST", "0.0.0.0").strip() or "0.0.0.0",
@@ -75,9 +77,23 @@ def load_config() -> Config:
 
 
 def describe_proxy(config: Config) -> str:
-    if not config.telegram_proxy:
-        return "Telegram: прямое подключение (прокси не задан)"
-    return (
-        f"Telegram: трафик через {proxy_log_label(config.telegram_proxy)} "
-        f"(из {config.telegram_proxy_env})"
-    )
+    lines: list[str] = []
+    if config.telegram_proxy:
+        lines.append(
+            f"Telegram: трафик через {proxy_log_label(config.telegram_proxy)} "
+            f"(из {config.telegram_proxy_env})"
+        )
+    else:
+        lines.append("Telegram: прямое подключение (прокси не задан)")
+
+    if config.openrouter_proxy_url:
+        # Без логина/пароля в логах.
+        from urllib.parse import urlparse
+
+        parsed = urlparse(config.openrouter_proxy_url)
+        host = parsed.hostname or "?"
+        port = f":{parsed.port}" if parsed.port else ""
+        lines.append(f"OpenRouter: HTTP-прокси {parsed.scheme or 'http'}://{host}{port}")
+    else:
+        lines.append("OpenRouter: прямое подключение (OPENROUTER_PROXY_URL не задан)")
+    return "\n".join(lines)

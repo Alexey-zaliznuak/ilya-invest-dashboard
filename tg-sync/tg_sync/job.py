@@ -91,7 +91,12 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
         weeks = chunk_by_calendar_weeks(messages, settings.timezone)
         stats["weeks"] = len(weeks)
         stats["phase"] = "llm"
-        _log(connection, f"Нарезано недель: {len(weeks)}. Модель: {config.openrouter_model}", stats=stats)
+        via = "через OPENROUTER_PROXY_URL" if config.openrouter_proxy_url else "напрямую"
+        _log(
+            connection,
+            f"Нарезано недель: {len(weeks)}. Модель: {config.openrouter_model} ({via})",
+            stats=stats,
+        )
 
         all_trades: list[ClosedTrade] = []
         for index, chunk in enumerate(weeks, start=1):
@@ -107,6 +112,7 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
                 model=config.openrouter_model,
                 chunk=chunk,
                 retries=config.llm_retries,
+                proxy_url=config.openrouter_proxy_url,
             )
             week_file = run_dir / f"week-{chunk.key}.json"
             week_file.write_text(

@@ -159,7 +159,8 @@
 }
 
 .sync-status-text {
-  margin: 0 0 12px;
+  margin: 12px 0 0;
+  padding: 0 18px;
   color: var(--g-color-text-secondary);
   font-size: 12px;
   line-height: 1.45;
@@ -167,7 +168,7 @@
 }
 
 .sync-log {
-  margin: 0;
+  margin: 12px 18px 18px;
   max-height: 420px;
   overflow: auto;
   padding: 12px;
