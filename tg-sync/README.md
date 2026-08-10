@@ -6,13 +6,12 @@
 
 1. Получите `api_id` / `api_hash` на https://my.telegram.org
 2. Пропишите в `.env`: `TG_API_ID`, `TG_API_HASH`, `OPENROUTER_API_KEY`
-3. Если DC Telegram режутся (ТСПУ) — задайте прокси (по образцу aheron `telegram-proxy`):
+3. Если DC Telegram режутся (ТСПУ) — HTTP CONNECT к `telegram-proxy` (`setup.sh`, :3128).
+   На реле ACL должен пускать не только `api.telegram.org`, но и CIDR DC на 443
+   (см. `3proxy/3proxy.cfg.tmpl` в aheron/telegram-proxy).
 
 ```env
-# лучше SOCKS5 phone-прокси
-TELEGRAM_PROXY=socks5://phone:pass@telegram-proxy.messengers.aheron.pro:1080
-# или HTTP CONNECT
-# TELEGRAM_PROXY=http://messengers:pass@telegram-proxy.aheron.pro:3128
+TELEGRAM_PROXY=http://tg-proxy:pass@telegram-proxy.messengers.aheron.pro:3128
 ```
 
 4. Запустите интерактивный логин (один раз):
