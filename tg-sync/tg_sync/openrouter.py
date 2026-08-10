@@ -25,6 +25,13 @@ SYSTEM_PROMPT = """\
 - Если в тексте есть и ROIC, и ROE — бери именно ROE (не ROIC).
 - «−2.20% по ROIC или −0.220% по ROE» → roe=-0.220
 
+Несколько инструментов в одном сообщении:
+- Каждая закрытая позиция — отдельный объект в trades со своим ticker и roe.
+- Пример: «#BRQ6 … -0.094% ROE #BRU6 … -0.136% ROE» → два объекта:
+  {"message_id":…,"ticker":"BRQ6",…,"roe":-0.094} и
+  {"message_id":…,"ticker":"BRU6",…,"roe":-0.136}
+- Не усредняй и не копируй ROE соседнего тикера.
+
 Правила:
 - Только закрытые/зафиксированные сделки с известным ROE.
 - Не включай открытые позиции, планы, обсуждения без фиксации.
@@ -35,47 +42,6 @@ SYSTEM_PROMPT = """\
 - Если закрытых сделок нет — {"trades":[]}.
 - Не добавляй markdown, комментарии и поля вне схемы.
 """
-
-_ROE_PATTERNS = (
-    re.compile(
-        r"([+-]?\d+(?:[.,]\d+)?)\s*%\s*по\s*ROE\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\bROE\b\s*[:=]?\s*([+-]?\d+(?:[.,]\d+)?)\s*%",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"([+-]?\d+(?:[.,]\d+)?)\s*%\s*(?:по\s+)?ROE\b",
-        re.IGNORECASE,
-    ),
-)
-
-
-def parse_roe_from_text(text: str) -> Decimal | None:
-    """Достаёт ROE из текста сообщения; ROIC намеренно игнорируем."""
-    for pattern in _ROE_PATTERNS:
-        match = pattern.search(text or "")
-        if not match:
-            continue
-        raw = match.group(1).replace(",", ".")
-        try:
-            return Decimal(raw).quantize(Decimal("0.0001"))
-        except Exception:  # noqa: BLE001
-            continue
-    return None
-
-
-def normalize_roe(model_roe: Decimal, message_text: str) -> Decimal:
-    """
-    В БД храним процентные пункты (0.206 = 0.206%).
-    Если в тексте явно написано «…% по ROE» — это источник истины
-    (модель часто ошибочно делит на 100 → −0.0022 вместо −0.220).
-    """
-    from_text = parse_roe_from_text(message_text)
-    if from_text is not None:
-        return from_text
-    return model_roe.quantize(Decimal("0.0001"))
 
 
 class ExtractedTrade(BaseModel):
@@ -164,7 +130,7 @@ def resolve_trades(extracted: list[ExtractedTrade], chunk: WeekChunk) -> list[Cl
                 datetime=message.datetime,
                 ticker=item.ticker,
                 title=item.title,
-                roe=normalize_roe(item.roe, message.text),
+                roe=item.roe,
                 message_id=item.message_id,
             )
         )
