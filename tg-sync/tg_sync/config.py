@@ -3,6 +3,9 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+from .proxy import parse_telegram_proxy_url, proxy_log_label
 
 
 def _required(name: str) -> str:
@@ -10,6 +13,19 @@ def _required(name: str) -> str:
     if not value:
         raise RuntimeError(f"Не задана обязательная переменная окружения {name}")
     return value
+
+
+def _proxy_from_env() -> tuple[str, dict[str, Any] | None]:
+    """TELEGRAM_PROXY → TG_PROXY → TELEGRAM_HTTP_PROXY (как в aheron messengers)."""
+    for name in ("TELEGRAM_PROXY", "TG_PROXY", "TELEGRAM_HTTP_PROXY"):
+        raw = os.environ.get(name, "").strip()
+        if not raw:
+            continue
+        try:
+            return name, parse_telegram_proxy_url(raw)
+        except ValueError as error:
+            raise RuntimeError(f"{name}: {error}") from error
+    return "", None
 
 
 @dataclass(frozen=True)
@@ -27,12 +43,15 @@ class Config:
     llm_retries: int
     http_host: str
     http_port: int
+    telegram_proxy: dict[str, Any] | None
+    telegram_proxy_env: str
 
 
 def load_config() -> Config:
     session_path = Path(os.environ.get("TG_SESSION_PATH", "/data/session/roe")).expanduser()
     backups_dir = Path(os.environ.get("TG_BACKUPS_DIR", "/data/backups")).expanduser()
     work_dir = Path(os.environ.get("TG_WORK_DIR", "/data/work")).expanduser()
+    proxy_env, proxy = _proxy_from_env()
 
     return Config(
         database_url=_required("DATABASE_URL"),
@@ -50,4 +69,15 @@ def load_config() -> Config:
         llm_retries=int(os.environ.get("TG_SYNC_LLM_RETRIES", "2")),
         http_host=os.environ.get("TG_SYNC_HTTP_HOST", "0.0.0.0").strip() or "0.0.0.0",
         http_port=int(os.environ.get("TG_SYNC_HTTP_PORT", "3010")),
+        telegram_proxy=proxy,
+        telegram_proxy_env=proxy_env,
+    )
+
+
+def describe_proxy(config: Config) -> str:
+    if not config.telegram_proxy:
+        return "Telegram: прямое подключение (прокси не задан)"
+    return (
+        f"Telegram: трафик через {proxy_log_label(config.telegram_proxy)} "
+        f"(из {config.telegram_proxy_env})"
     )

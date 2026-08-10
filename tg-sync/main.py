@@ -7,7 +7,7 @@ import argparse
 import asyncio
 import sys
 
-from tg_sync.config import load_config
+from tg_sync.config import describe_proxy, load_config
 from tg_sync.db import connect
 from tg_sync.http_api import serve_http
 from tg_sync.job import run_sync_job
@@ -29,7 +29,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 async def cmd_auth() -> None:
     config = load_config()
-    client = build_client(config.tg_api_id, config.tg_api_hash, config.session_path)
+    print(describe_proxy(config))
+    client = build_client(config)
     async with client:
         await interactive_auth(client)
     print(f"Сессия сохранена: {config.session_path}")
@@ -37,6 +38,7 @@ async def cmd_auth() -> None:
 
 async def cmd_once() -> None:
     config = load_config()
+    print(describe_proxy(config))
     connection = connect(config.database_url)
     try:
         await run_sync_job(connection, config)
@@ -46,6 +48,7 @@ async def cmd_once() -> None:
 
 async def cmd_worker() -> None:
     config = load_config()
+    print(describe_proxy(config))
     tg_lock = asyncio.Lock()
     await asyncio.gather(
         worker_loop(config, tg_lock),

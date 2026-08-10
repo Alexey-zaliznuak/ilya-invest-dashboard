@@ -47,7 +47,7 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
         run_dir = config.work_dir / datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         run_dir.mkdir(parents=True, exist_ok=True)
 
-        client = build_client(config.tg_api_id, config.tg_api_hash, config.session_path)
+        client = build_client(config)
         async with client:
             await ensure_session(client)
             messages = await fetch_messages(

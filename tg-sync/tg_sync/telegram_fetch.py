@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from telethon import TelegramClient
@@ -9,12 +8,18 @@ from telethon.tl.custom.dialog import Dialog
 from telethon.tl.custom.message import Message
 from telethon.tl.types import Channel, Chat, User
 
+from .config import Config
 from .models import ChatMessage
 
 
-def build_client(api_id: int, api_hash: str, session_path: Path) -> TelegramClient:
-    session_path.parent.mkdir(parents=True, exist_ok=True)
-    return TelegramClient(str(session_path), api_id, api_hash)
+def build_client(config: Config) -> TelegramClient:
+    config.session_path.parent.mkdir(parents=True, exist_ok=True)
+    return TelegramClient(
+        str(config.session_path),
+        config.tg_api_id,
+        config.tg_api_hash,
+        proxy=config.telegram_proxy,
+    )
 
 
 async def ensure_session(client: TelegramClient) -> None:

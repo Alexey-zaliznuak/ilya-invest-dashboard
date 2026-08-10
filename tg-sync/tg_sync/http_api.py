@@ -20,7 +20,7 @@ def create_app(config: Config, tg_lock: asyncio.Lock) -> web.Application:
     async def dialogs(_request: web.Request) -> web.Response:
         try:
             async with tg_lock:
-                client = build_client(config.tg_api_id, config.tg_api_hash, config.session_path)
+                client = build_client(config)
                 async with client:
                     await ensure_session(client)
                     items = await list_dialogs(client)
