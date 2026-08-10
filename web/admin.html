@@ -261,7 +261,12 @@
                   <div class="panel-title">Статус и лог прогона</div>
                   <div class="panel-subtitle">Обновляется во время синхронизации</div>
                 </div>
-                <div class="pill" id="tgSyncStatusPill">Статус: —</div>
+                <div class="panel-head-actions">
+                  <button class="g-button small" id="tgSyncMessagesBtn" type="button">
+                    Сообщения
+                  </button>
+                  <div class="pill" id="tgSyncStatusPill">Статус: —</div>
+                </div>
               </div>
               <p class="sync-status-text" id="tgSyncStatusText"></p>
               <pre class="sync-log" id="tgSyncLog" aria-live="polite">Лог пуст</pre>
@@ -270,6 +275,29 @@
         </div>
       </div>
     </div>
+
+    <div class="modal" id="tgSyncMessagesModal" hidden>
+      <div class="modal-backdrop" data-close-messages-modal></div>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tgSyncMessagesTitle">
+        <div class="modal-head">
+          <div>
+            <div class="panel-title" id="tgSyncMessagesTitle">Сообщения прогона</div>
+            <div class="panel-subtitle">Что модель взяла в сделки и что пропустила</div>
+          </div>
+          <button class="g-button small" type="button" data-close-messages-modal>Закрыть</button>
+        </div>
+        <div class="modal-tabs" role="tablist">
+          <button class="modal-tab is-active" type="button" data-messages-tab="used" role="tab">
+            Взяты <span id="tgSyncMessagesUsedCount">0</span>
+          </button>
+          <button class="modal-tab" type="button" data-messages-tab="unused" role="tab">
+            Не взяты <span id="tgSyncMessagesUnusedCount">0</span>
+          </button>
+        </div>
+        <div class="modal-body sync-messages-list" id="tgSyncMessagesList"></div>
+      </div>
+    </div>
+
     <script type="module" src="/src/admin/main.ts"></script>
   </body>
 </html>

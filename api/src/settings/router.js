@@ -2,7 +2,12 @@ import { Router } from 'express';
 
 import { requireAuth } from '../auth.js';
 import { HttpError } from '../errors.js';
-import { getTgSyncSettings, requestTgSyncRun, updateTgSyncSettings } from './repository.js';
+import {
+  getTgSyncMessages,
+  getTgSyncSettings,
+  requestTgSyncRun,
+  updateTgSyncSettings,
+} from './repository.js';
 import { proxyTgSync } from './tgSyncProxy.js';
 import { parseTelegramLink, parseTgSyncSettingsInput } from './validation.js';
 
@@ -34,6 +39,10 @@ settingsRouter.get('/tg-sync/status', requireAuth, async (_req, res) => {
       lastRunLog: settings.lastRunLog,
     },
   });
+});
+
+settingsRouter.get('/tg-sync/messages', requireAuth, async (_req, res) => {
+  res.json({ messages: await getTgSyncMessages() });
 });
 
 settingsRouter.post('/tg-sync/resolve-link', requireAuth, async (req, res) => {

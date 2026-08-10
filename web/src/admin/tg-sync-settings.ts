@@ -1,5 +1,6 @@
 import {
   fetchTgDialogs,
+  fetchTgSyncMessages,
   fetchTgSyncSettings,
   fetchTgSyncStatus,
   requestTgSyncRun,
@@ -12,7 +13,14 @@ import {
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
 } from '../lib/format';
-import type { TgDialog, TgSyncLogEntry, TgSyncSettings, TgSyncStatus } from '../lib/types';
+import type {
+  TgDialog,
+  TgSyncLogEntry,
+  TgSyncMessagesReview,
+  TgSyncRunMessage,
+  TgSyncSettings,
+  TgSyncStatus,
+} from '../lib/types';
 
 export interface TgSyncFormElements {
   form: HTMLFormElement;
@@ -34,6 +42,11 @@ export interface TgSyncFormElements {
   statusPill: HTMLElement;
   statusText: HTMLElement;
   log: HTMLElement;
+  messagesBtn: HTMLButtonElement;
+  messagesModal: HTMLElement;
+  messagesList: HTMLElement;
+  messagesUsedCount: HTMLElement;
+  messagesUnusedCount: HTMLElement;
 }
 
 export interface TgSyncPanel {
@@ -120,6 +133,11 @@ const renderStatus = (
     );
   }
   if (typeof stats.messages === 'number') statsBits.push(`сообщений: ${stats.messages}`);
+  if (typeof stats.messagesUsed === 'number' || typeof stats.messagesUnused === 'number') {
+    const used = typeof stats.messagesUsed === 'number' ? stats.messagesUsed : 0;
+    const unused = typeof stats.messagesUnused === 'number' ? stats.messagesUnused : 0;
+    statsBits.push(`взято/пропущено: ${used}/${unused}`);
+  }
   if (typeof stats.trades === 'number') statsBits.push(`сделок: ${stats.trades}`);
   if (typeof stats.inserted === 'number') statsBits.push(`вставлено: ${stats.inserted}`);
   if (typeof stats.backupFile === 'string' && stats.backupFile) {
@@ -153,6 +171,52 @@ const readTopicId = (value: string): number | null => {
   const trimmed = value.trim();
   if (!trimmed) return null;
   return Number(trimmed);
+};
+
+const formatRoe = (roe: number): string => {
+  const sign = roe > 0 ? '+' : '';
+  return `${sign}${roe.toFixed(2)}%`;
+};
+
+const renderMessagesList = (
+  elements: TgSyncFormElements,
+  review: TgSyncMessagesReview,
+  tab: 'used' | 'unused',
+): void => {
+  elements.messagesUsedCount.textContent = String(review.used.length);
+  elements.messagesUnusedCount.textContent = String(review.unused.length);
+
+  elements.messagesModal.querySelectorAll<HTMLButtonElement>('[data-messages-tab]').forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.messagesTab === tab);
+  });
+
+  const rows: TgSyncRunMessage[] = tab === 'used' ? review.used : review.unused;
+  if (rows.length === 0) {
+    elements.messagesList.innerHTML = `<div class="state-message" style="padding:16px">Пока пусто — нужен завершённый прогон</div>`;
+    return;
+  }
+
+  elements.messagesList.innerHTML = rows
+    .map((message) => {
+      const trades = (message.trades ?? [])
+        .map(
+          (trade) =>
+            `<span class="sync-message-trade">${escapeHtml(trade.ticker)} · ${escapeHtml(formatRoe(trade.roe))}${
+              trade.title ? ` · ${escapeHtml(trade.title)}` : ''
+            }</span>`,
+        )
+        .join('');
+      return `<article class="sync-message-row">
+        <div class="sync-message-meta">
+          <span>#${escapeHtml(String(message.id))}</span>
+          <span>${escapeHtml(formatDateTime(message.datetime))}</span>
+          ${message.edited ? '<span>edited</span>' : ''}
+        </div>
+        <pre class="sync-message-text">${escapeHtml(message.text)}</pre>
+        ${trades ? `<div class="sync-message-trades">${trades}</div>` : ''}
+      </article>`;
+    })
+    .join('');
 };
 
 const renderDialogs = (elements: TgSyncFormElements, dialogs: TgDialog[]): void => {
@@ -191,6 +255,8 @@ export function bindTgSyncPanel(
   let busy = false;
   let dialogs: TgDialog[] = [];
   let lastStatus = 'idle';
+  let messagesReview: TgSyncMessagesReview = { used: [], unused: [] };
+  let messagesTab: 'used' | 'unused' = 'used';
 
   const setBusy = (next: boolean): void => {
     busy = next;
@@ -198,6 +264,18 @@ export function bindTgSyncPanel(
     elements.run.disabled = next;
     elements.resolveLink.disabled = next;
     elements.loadDialogs.disabled = next;
+    elements.messagesBtn.disabled = next;
+  };
+
+  const closeMessagesModal = (): void => {
+    elements.messagesModal.hidden = true;
+  };
+
+  const openMessagesModal = async (): Promise<void> => {
+    messagesReview = await fetchTgSyncMessages();
+    messagesTab = 'used';
+    renderMessagesList(elements, messagesReview, messagesTab);
+    elements.messagesModal.hidden = false;
   };
 
   const persistForm = async (): Promise<TgSyncSettings> => {
@@ -326,6 +404,32 @@ export function bindTgSyncPanel(
       .catch((error) => onError(error, 'Не удалось сохранить выбранный чат'));
   });
 
+  elements.messagesBtn.addEventListener('click', () => {
+    if (busy) return;
+    setBusy(true);
+    void openMessagesModal()
+      .catch((error) => onError(error, 'Не удалось загрузить сообщения прогона'))
+      .finally(() => setBusy(false));
+  });
+
+  elements.messagesModal.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-close-messages-modal]')) {
+      closeMessagesModal();
+      return;
+    }
+    const tabButton = target.closest<HTMLButtonElement>('[data-messages-tab]');
+    if (!tabButton?.dataset.messagesTab) return;
+    messagesTab = tabButton.dataset.messagesTab === 'unused' ? 'unused' : 'used';
+    renderMessagesList(elements, messagesReview, messagesTab);
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !elements.messagesModal.hidden) {
+      closeMessagesModal();
+    }
+  });
+
   return panel;
 }
 
@@ -349,4 +453,9 @@ export const readTgSyncElements = (): TgSyncFormElements => ({
   statusPill: requireElement<HTMLElement>('#tgSyncStatusPill'),
   statusText: requireElement<HTMLElement>('#tgSyncStatusText'),
   log: requireElement<HTMLElement>('#tgSyncLog'),
+  messagesBtn: requireElement<HTMLButtonElement>('#tgSyncMessagesBtn'),
+  messagesModal: requireElement<HTMLElement>('#tgSyncMessagesModal'),
+  messagesList: requireElement<HTMLElement>('#tgSyncMessagesList'),
+  messagesUsedCount: requireElement<HTMLElement>('#tgSyncMessagesUsedCount'),
+  messagesUnusedCount: requireElement<HTMLElement>('#tgSyncMessagesUnusedCount'),
 });

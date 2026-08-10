@@ -8,7 +8,8 @@ import psycopg
 from .apply import apply_trades
 from .backup import backup_trades
 from .config import Config
-from .models import ClosedTrade
+from .messages_review import build_messages_review
+from .models import ChatMessage, ClosedTrade
 from .openrouter import extract_trades_for_week
 from .settings import append_run_log, finish_run, mark_running
 from .telegram_fetch import build_client, ensure_session, fetch_messages
@@ -36,7 +37,13 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
         "inserted": 0,
         "weekIndex": 0,
         "phase": "start",
+        "messagesUsed": 0,
+        "messagesUnused": 0,
     }
+    messages: list[ChatMessage] = []
+    all_trades: list[ClosedTrade] = []
+    review: dict | None = None
+    run_dir = None
 
     try:
         _log(connection, "Старт синхронизации", stats=stats)
@@ -98,7 +105,6 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
             stats=stats,
         )
 
-        all_trades: list[ClosedTrade] = []
         for index, chunk in enumerate(weeks, start=1):
             stats["weekIndex"] = index
             _log(
@@ -140,6 +146,15 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
             seen.add(key)
             unique.append(trade)
 
+        review = build_messages_review(messages, unique)
+        stats["messagesUsed"] = len(review["used"])
+        stats["messagesUnused"] = len(review["unused"])
+        review_path = run_dir / "messages-review.json"
+        review_path.write_text(
+            json.dumps(review, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
         merged_path = run_dir / "merged-trades.json"
         merged_path.write_text(
             json.dumps([trade.as_db_row() for trade in unique], ensure_ascii=False, indent=2)
@@ -149,7 +164,12 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
         stats["trades"] = len(unique)
         if skipped_old:
             _log(connection, f"Отброшено вне окна parse_from: {skipped_old}")
-        _log(connection, f"Уникальных сделок к загрузке: {len(unique)}", stats=stats)
+        _log(
+            connection,
+            f"Уникальных сделок к загрузке: {len(unique)} "
+            f"(сообщений взято {stats['messagesUsed']}, пропущено {stats['messagesUnused']})",
+            stats=stats,
+        )
 
         stats["phase"] = "apply"
         _log(connection, "Пишу сделки в БД (атомарно)…", stats=stats)
@@ -172,10 +192,26 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
             connection,
             status="success",
             stats=stats,
+            messages=review,
             clear_rescan_all=rescan_all,
         )
     except Exception as error:  # noqa: BLE001
         stats["phase"] = "error"
+        if messages:
+            review = build_messages_review(messages, all_trades)
+            stats["messagesUsed"] = len(review["used"])
+            stats["messagesUnused"] = len(review["unused"])
+            if run_dir is not None:
+                (run_dir / "messages-review.json").write_text(
+                    json.dumps(review, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
         _log(connection, f"Ошибка: {error}", level="error", stats=stats)
-        finish_run(connection, status="error", error=str(error), stats=stats)
+        finish_run(
+            connection,
+            status="error",
+            error=str(error),
+            stats=stats,
+            messages=review,
+        )
         raise

@@ -51,6 +51,7 @@ def mark_running(connection: psycopg.Connection) -> TgSyncSettings:
                last_run_error = '',
                last_run_stats = '{}'::jsonb,
                last_run_log = '[]'::jsonb,
+               last_run_messages = '{"used":[],"unused":[]}'::jsonb,
                last_run_at = now(),
                updated_at = now()
          WHERE id = 1
@@ -113,19 +114,28 @@ def finish_run(
     status: str,
     error: str = "",
     stats: dict[str, Any] | None = None,
+    messages: dict[str, Any] | None = None,
     clear_rescan_all: bool = False,
 ) -> None:
+    payload = messages if messages is not None else {"used": [], "unused": []}
     connection.execute(
         """
         UPDATE tg_sync_settings
            SET last_run_status = %s,
                last_run_error = %s,
                last_run_stats = %s::jsonb,
+               last_run_messages = %s::jsonb,
                rescan_all = CASE WHEN %s THEN false ELSE rescan_all END,
                updated_at = now()
          WHERE id = 1
         """,
-        (status, error[:4000], json.dumps(stats or {}, ensure_ascii=False), clear_rescan_all),
+        (
+            status,
+            error[:4000],
+            json.dumps(stats or {}, ensure_ascii=False),
+            json.dumps(payload, ensure_ascii=False),
+            clear_rescan_all,
+        ),
     )
 
 

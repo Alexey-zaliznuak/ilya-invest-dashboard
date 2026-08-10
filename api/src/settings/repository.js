@@ -97,3 +97,27 @@ export async function requestTgSyncRun() {
   );
   return mapRow(rows[0]);
 }
+
+const mapMessageTrade = (raw) => ({
+  ticker: typeof raw?.ticker === 'string' ? raw.ticker : '',
+  title: typeof raw?.title === 'string' ? raw.title : '',
+  roe: typeof raw?.roe === 'number' ? raw.roe : Number(raw?.roe ?? 0),
+});
+
+const mapRunMessage = (raw) => ({
+  id: Number(raw?.id ?? 0),
+  datetime: typeof raw?.datetime === 'string' ? raw.datetime : '',
+  text: typeof raw?.text === 'string' ? raw.text : '',
+  edited: Boolean(raw?.edited),
+  trades: Array.isArray(raw?.trades) ? raw.trades.map(mapMessageTrade) : undefined,
+});
+
+export async function getTgSyncMessages() {
+  const { rows } = await pool.query(
+    `SELECT last_run_messages FROM tg_sync_settings WHERE id = 1`,
+  );
+  const raw = rows[0]?.last_run_messages ?? {};
+  const used = Array.isArray(raw.used) ? raw.used.map(mapRunMessage) : [];
+  const unused = Array.isArray(raw.unused) ? raw.unused.map(mapRunMessage) : [];
+  return { used, unused };
+}

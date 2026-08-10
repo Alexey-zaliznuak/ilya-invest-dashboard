@@ -158,6 +158,14 @@
   flex-wrap: wrap;
 }
 
+.panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .sync-status-text {
   margin: 12px 0 0;
   padding: 0 18px;
@@ -165,6 +173,125 @@
   font-size: 12px;
   line-height: 1.45;
   white-space: pre-wrap;
+}
+
+.modal[hidden] {
+  display: none !important;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 17, 21, 0.45);
+}
+
+.modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(820px, 100%);
+  max-height: min(84vh, 900px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  border-radius: 14px;
+  border: 1px solid var(--g-color-line-generic);
+  background: var(--g-color-base-generic);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 18px 0;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 14px 18px 0;
+}
+
+.modal-tab {
+  appearance: none;
+  border: 1px solid var(--g-color-line-generic);
+  background: transparent;
+  color: var(--g-color-text-secondary);
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 0 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.modal-tab.is-active {
+  background: var(--g-color-base-info-light);
+  color: var(--g-color-text-primary);
+  border-color: transparent;
+}
+
+.modal-body {
+  min-height: 0;
+  margin: 14px 18px 18px;
+  overflow: auto;
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: 10px;
+  background: var(--g-color-base-background);
+}
+
+.sync-message-row {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-bottom: 1px solid var(--g-color-line-generic);
+}
+
+.sync-message-row:last-child {
+  border-bottom: 0;
+}
+
+.sync-message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  color: var(--g-color-text-hint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-message-text {
+  margin: 0;
+  color: var(--g-color-text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sync-message-trades {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sync-message-trade {
+  border-radius: 8px;
+  border: 1px solid var(--g-color-line-generic);
+  background: var(--g-color-base-generic);
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--g-color-text-secondary);
 }
 
 .sync-log {

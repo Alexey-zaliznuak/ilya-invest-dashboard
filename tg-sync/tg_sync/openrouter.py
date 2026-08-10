@@ -16,8 +16,17 @@ SYSTEM_PROMPT = """\
 Верни ТОЛЬКО валидный JSON-объект вида:
 {"trades":[{"message_id":48553,"ticker":"BRN6","title":"Закрыл нефть по текущим","roe":0.206}]}
 
+Формат поля roe (критично):
+- Это ЧИСЛО ПРОЦЕНТНЫХ ПУНКТОВ, как рядом со знаком % у ROE.
+- Пример: «-0.220% по ROE» → roe=-0.220
+- Пример: «+1.066% ROE» → roe=1.066
+- Пример из эталона: «0.206%» → roe=0.206
+- НЕ дели на 100. НЕ переводи в долю капитала. −0.220% это −0.220, а не −0.0022.
+- Если в тексте есть и ROIC, и ROE — бери именно ROE (не ROIC).
+- «−2.20% по ROIC или −0.220% по ROE» → roe=-0.220
+
 Правила:
-- Только закрытые/зафиксированные сделки с известным ROE (в процентах, число).
+- Только закрытые/зафиксированные сделки с известным ROE.
 - Не включай открытые позиции, планы, обсуждения без фиксации.
 - message_id — id сообщения из метаданных строки (поле id=…). Именно по нему мы возьмём время из Telegram API; datetime сам не придумывай и не возвращай.
 - Если одна фиксация описана несколькими сообщениями — укажи id сообщения, где зафиксированы закрытие и ROE.
@@ -26,6 +35,47 @@ SYSTEM_PROMPT = """\
 - Если закрытых сделок нет — {"trades":[]}.
 - Не добавляй markdown, комментарии и поля вне схемы.
 """
+
+_ROE_PATTERNS = (
+    re.compile(
+        r"([+-]?\d+(?:[.,]\d+)?)\s*%\s*по\s*ROE\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bROE\b\s*[:=]?\s*([+-]?\d+(?:[.,]\d+)?)\s*%",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"([+-]?\d+(?:[.,]\d+)?)\s*%\s*(?:по\s+)?ROE\b",
+        re.IGNORECASE,
+    ),
+)
+
+
+def parse_roe_from_text(text: str) -> Decimal | None:
+    """Достаёт ROE из текста сообщения; ROIC намеренно игнорируем."""
+    for pattern in _ROE_PATTERNS:
+        match = pattern.search(text or "")
+        if not match:
+            continue
+        raw = match.group(1).replace(",", ".")
+        try:
+            return Decimal(raw).quantize(Decimal("0.0001"))
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
+def normalize_roe(model_roe: Decimal, message_text: str) -> Decimal:
+    """
+    В БД храним процентные пункты (0.206 = 0.206%).
+    Если в тексте явно написано «…% по ROE» — это источник истины
+    (модель часто ошибочно делит на 100 → −0.0022 вместо −0.220).
+    """
+    from_text = parse_roe_from_text(message_text)
+    if from_text is not None:
+        return from_text
+    return model_roe.quantize(Decimal("0.0001"))
 
 
 class ExtractedTrade(BaseModel):
@@ -114,7 +164,7 @@ def resolve_trades(extracted: list[ExtractedTrade], chunk: WeekChunk) -> list[Cl
                 datetime=message.datetime,
                 ticker=item.ticker,
                 title=item.title,
-                roe=item.roe,
+                roe=normalize_roe(item.roe, message.text),
                 message_id=item.message_id,
             )
         )

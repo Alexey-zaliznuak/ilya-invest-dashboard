@@ -5,6 +5,7 @@ import type {
   TradeDraft,
   TgDialog,
   TgSyncSettings,
+  TgSyncMessagesReview,
   TgSyncStatus,
 } from './types';
 
@@ -147,6 +148,14 @@ export async function fetchTgSyncStatus(): Promise<TgSyncStatus> {
     auth: true,
   });
   return status;
+}
+
+export async function fetchTgSyncMessages(): Promise<TgSyncMessagesReview> {
+  const { messages } = await request<{ messages: TgSyncMessagesReview }>(
+    '/settings/tg-sync/messages',
+    { auth: true },
+  );
+  return messages;
 }
 
 export async function resolveTelegramLink(url: string): Promise<ResolvedTelegramLink> {

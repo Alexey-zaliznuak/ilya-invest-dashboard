@@ -94,3 +94,22 @@ export interface TgSyncStatus {
   lastRunStats: Record<string, unknown>;
   lastRunLog: TgSyncLogEntry[];
 }
+
+export interface TgSyncMessageTrade {
+  ticker: string;
+  title: string;
+  roe: number;
+}
+
+export interface TgSyncRunMessage {
+  id: number;
+  datetime: string;
+  text: string;
+  edited: boolean;
+  trades?: TgSyncMessageTrade[];
+}
+
+export interface TgSyncMessagesReview {
+  used: TgSyncRunMessage[];
+  unused: TgSyncRunMessage[];
+}
