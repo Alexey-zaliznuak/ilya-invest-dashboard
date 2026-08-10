@@ -52,8 +52,11 @@
   min-width: 0;
 }
 
+/* display:grid на этих блоках иначе перебивает атрибут hidden. */
+.auth-wrap[hidden],
+.admin-layout[hidden],
 .admin-section[hidden] {
-  display: none;
+  display: none !important;
 }
 
 .auth-wrap {
