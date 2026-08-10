@@ -19,8 +19,18 @@ const COLUMNS = `
   last_run_status,
   last_run_error,
   last_run_stats,
+  last_run_log,
   to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS updated_at
 `;
+
+const mapLog = (raw) => {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => ({
+    at: typeof item?.at === 'string' ? item.at : '',
+    level: typeof item?.level === 'string' ? item.level : 'info',
+    message: typeof item?.message === 'string' ? item.message : String(item ?? ''),
+  }));
+};
 
 const mapRow = (row) => ({
   enabled: row.enabled,
@@ -35,6 +45,7 @@ const mapRow = (row) => ({
   lastRunStatus: row.last_run_status,
   lastRunError: row.last_run_error,
   lastRunStats: row.last_run_stats ?? {},
+  lastRunLog: mapLog(row.last_run_log),
   updatedAt: row.updated_at,
 });
 

@@ -48,6 +48,12 @@ export interface Metrics {
   lastDate: string | null;
 }
 
+export interface TgSyncLogEntry {
+  at: string;
+  level: string;
+  message: string;
+}
+
 export interface TgSyncSettings {
   enabled: boolean;
   cron: string;
@@ -61,6 +67,7 @@ export interface TgSyncSettings {
   lastRunStatus: string;
   lastRunError: string;
   lastRunStats: Record<string, unknown>;
+  lastRunLog: TgSyncLogEntry[];
   updatedAt: string;
 }
 
@@ -85,4 +92,5 @@ export interface TgSyncStatus {
   lastRunStatus: string;
   lastRunError: string;
   lastRunStats: Record<string, unknown>;
+  lastRunLog: TgSyncLogEntry[];
 }

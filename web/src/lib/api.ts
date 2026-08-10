@@ -117,7 +117,13 @@ export async function fetchTgSyncSettings(): Promise<TgSyncSettings> {
 export async function saveTgSyncSettings(
   draft: Omit<
     TgSyncSettings,
-    'runRequested' | 'lastRunAt' | 'lastRunStatus' | 'lastRunError' | 'lastRunStats' | 'updatedAt'
+    | 'runRequested'
+    | 'lastRunAt'
+    | 'lastRunStatus'
+    | 'lastRunError'
+    | 'lastRunStats'
+    | 'lastRunLog'
+    | 'updatedAt'
   >,
 ): Promise<TgSyncSettings> {
   const { settings } = await request<{ settings: TgSyncSettings }>('/settings/tg-sync', {

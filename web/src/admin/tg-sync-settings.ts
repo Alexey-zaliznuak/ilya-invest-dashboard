@@ -12,7 +12,7 @@ import {
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
 } from '../lib/format';
-import type { TgDialog, TgSyncSettings, TgSyncStatus } from '../lib/types';
+import type { TgDialog, TgSyncLogEntry, TgSyncSettings, TgSyncStatus } from '../lib/types';
 
 export interface TgSyncFormElements {
   form: HTMLFormElement;
@@ -33,6 +33,7 @@ export interface TgSyncFormElements {
   run: HTMLButtonElement;
   statusPill: HTMLElement;
   statusText: HTMLElement;
+  log: HTMLElement;
 }
 
 export interface TgSyncPanel {
@@ -56,12 +57,53 @@ const statusLabel = (status: string): string => {
   }
 };
 
+const formatLogTime = (iso: string): string => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Europe/Moscow',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).format(date);
+};
+
+const renderLog = (elements: TgSyncFormElements, entries: TgSyncLogEntry[]): void => {
+  const nearBottom =
+    elements.log.scrollHeight - elements.log.scrollTop - elements.log.clientHeight < 48;
+
+  if (!entries.length) {
+    elements.log.textContent = 'Лог пуст';
+    return;
+  }
+
+  elements.log.innerHTML = entries
+    .map((entry) => {
+      const level = escapeHtml(entry.level || 'info');
+      const time = escapeHtml(formatLogTime(entry.at));
+      const message = escapeHtml(entry.message);
+      return `<div class="sync-log-line level-${level}"><span class="sync-log-time">${time}</span><span class="sync-log-level">${level}</span><span class="sync-log-msg">${message}</span></div>`;
+    })
+    .join('');
+
+  if (nearBottom) {
+    elements.log.scrollTop = elements.log.scrollHeight;
+  }
+};
+
 const renderStatus = (
   elements: TgSyncFormElements,
   settings:
     | Pick<
         TgSyncSettings,
-        'runRequested' | 'lastRunAt' | 'lastRunStatus' | 'lastRunError' | 'lastRunStats'
+        | 'runRequested'
+        | 'lastRunAt'
+        | 'lastRunStatus'
+        | 'lastRunError'
+        | 'lastRunStats'
+        | 'lastRunLog'
       >
     | TgSyncStatus,
 ): void => {
@@ -70,9 +112,16 @@ const renderStatus = (
 
   const stats = settings.lastRunStats ?? {};
   const statsBits: string[] = [];
-  if (typeof stats.weeks === 'number') statsBits.push(`недель: ${stats.weeks}`);
+  if (typeof stats.phase === 'string') statsBits.push(`фаза: ${stats.phase}`);
+  if (typeof stats.weeks === 'number') {
+    const weekIndex = typeof stats.weekIndex === 'number' ? stats.weekIndex : null;
+    statsBits.push(
+      weekIndex ? `недель: ${weekIndex}/${stats.weeks}` : `недель: ${stats.weeks}`,
+    );
+  }
   if (typeof stats.messages === 'number') statsBits.push(`сообщений: ${stats.messages}`);
   if (typeof stats.trades === 'number') statsBits.push(`сделок: ${stats.trades}`);
+  if (typeof stats.inserted === 'number') statsBits.push(`вставлено: ${stats.inserted}`);
   if (typeof stats.backupFile === 'string' && stats.backupFile) {
     statsBits.push(`бекап: ${stats.backupFile}`);
   }
@@ -86,6 +135,7 @@ const renderStatus = (
   ].filter(Boolean);
 
   elements.statusText.textContent = lines.join('\n');
+  renderLog(elements, settings.lastRunLog ?? []);
 };
 
 const fillForm = (elements: TgSyncFormElements, settings: TgSyncSettings): void => {
@@ -140,6 +190,7 @@ export function bindTgSyncPanel(
   let pollTimer: number | null = null;
   let busy = false;
   let dialogs: TgDialog[] = [];
+  let lastStatus = 'idle';
 
   const setBusy = (next: boolean): void => {
     busy = next;
@@ -149,24 +200,49 @@ export function bindTgSyncPanel(
     elements.loadDialogs.disabled = next;
   };
 
+  const persistForm = async (): Promise<TgSyncSettings> => {
+    const settings = await saveTgSyncSettings({
+      enabled: elements.enabled.checked,
+      cron: elements.cron.value.trim(),
+      chatId: elements.chatId.value.trim(),
+      topicId: readTopicId(elements.topicId.value),
+      parseFrom: fromDatetimeLocalValue(elements.parseFrom.value),
+      timezone: elements.timezone.value.trim() || 'Europe/Moscow',
+      rescanAll: elements.rescanAll.checked,
+    });
+    fillForm(elements, settings);
+    lastStatus = settings.lastRunStatus;
+    return settings;
+  };
+
+  const pollOnce = async (): Promise<void> => {
+    const status = await fetchTgSyncStatus();
+    renderStatus(elements, status);
+    lastStatus = status.lastRunStatus;
+  };
+
   const panel: TgSyncPanel = {
     async load() {
       const settings = await fetchTgSyncSettings();
       fillForm(elements, settings);
+      lastStatus = settings.lastRunStatus;
     },
     startPolling() {
       panel.stopPolling();
-      pollTimer = window.setInterval(() => {
-        void fetchTgSyncStatus()
-          .then((status) => renderStatus(elements, status))
+      const tick = (): void => {
+        void pollOnce()
           .catch(() => {
             /* тихий опрос */
+          })
+          .finally(() => {
+            pollTimer = window.setTimeout(tick, lastStatus === 'running' ? 1500 : 4000);
           });
-      }, 5000);
+      };
+      tick();
     },
     stopPolling() {
       if (pollTimer !== null) {
-        window.clearInterval(pollTimer);
+        window.clearTimeout(pollTimer);
         pollTimer = null;
       }
     },
@@ -177,16 +253,7 @@ export function bindTgSyncPanel(
     if (busy) return;
     setBusy(true);
     try {
-      const settings = await saveTgSyncSettings({
-        enabled: elements.enabled.checked,
-        cron: elements.cron.value.trim(),
-        chatId: elements.chatId.value.trim(),
-        topicId: readTopicId(elements.topicId.value),
-        parseFrom: fromDatetimeLocalValue(elements.parseFrom.value),
-        timezone: elements.timezone.value.trim() || 'Europe/Moscow',
-        rescanAll: elements.rescanAll.checked,
-      });
-      fillForm(elements, settings);
+      await persistForm();
       onInfo('Настройки tg-sync сохранены');
     } catch (error) {
       onError(error, 'Не удалось сохранить настройки tg-sync');
@@ -199,9 +266,13 @@ export function bindTgSyncPanel(
     if (busy) return;
     setBusy(true);
     try {
+      // Сначала сохраняем форму: иначе «Разобрать» / правки живут только в UI.
+      await persistForm();
       const settings = await requestTgSyncRun();
       fillForm(elements, settings);
-      onInfo('Запуск tg-sync запрошен');
+      lastStatus = settings.lastRunStatus;
+      panel.startPolling();
+      onInfo('Настройки сохранены, запуск запрошен');
     } catch (error) {
       onError(error, 'Не удалось запросить запуск');
     } finally {
@@ -216,10 +287,11 @@ export function bindTgSyncPanel(
       const resolved = await resolveTelegramLink(elements.link.value.trim());
       elements.chatId.value = resolved.chatId;
       elements.topicId.value = resolved.topicId === null ? '' : String(resolved.topicId);
+      await persistForm();
       onInfo(
         resolved.topicId
-          ? `Чат ${resolved.chatId}, топик ${resolved.topicId}`
-          : `Чат ${resolved.chatId}`,
+          ? `Сохранено: чат ${resolved.chatId}, топик ${resolved.topicId}`
+          : `Сохранено: чат ${resolved.chatId}`,
       );
     } catch (error) {
       onError(error, 'Не удалось разобрать ссылку');
@@ -249,7 +321,9 @@ export function bindTgSyncPanel(
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-id]');
     if (!button) return;
     elements.chatId.value = button.dataset.id ?? '';
-    onInfo(`Выбран чат ${elements.chatId.value}`);
+    void persistForm()
+      .then(() => onInfo(`Сохранён чат ${elements.chatId.value}`))
+      .catch((error) => onError(error, 'Не удалось сохранить выбранный чат'));
   });
 
   return panel;
@@ -274,4 +348,5 @@ export const readTgSyncElements = (): TgSyncFormElements => ({
   run: requireElement<HTMLButtonElement>('#tgSyncRun'),
   statusPill: requireElement<HTMLElement>('#tgSyncStatusPill'),
   statusText: requireElement<HTMLElement>('#tgSyncStatusText'),
+  log: requireElement<HTMLElement>('#tgSyncLog'),
 });

@@ -31,6 +31,7 @@ settingsRouter.get('/tg-sync/status', requireAuth, async (_req, res) => {
       lastRunStatus: settings.lastRunStatus,
       lastRunError: settings.lastRunError,
       lastRunStats: settings.lastRunStats,
+      lastRunLog: settings.lastRunLog,
     },
   });
 });

@@ -59,10 +59,12 @@ CREATE TABLE IF NOT EXISTS tg_sync_settings (
     last_run_status  TEXT         NOT NULL DEFAULT 'idle',
     last_run_error   TEXT         NOT NULL DEFAULT '',
     last_run_stats   JSONB        NOT NULL DEFAULT '{}'::jsonb,
+    last_run_log     JSONB        NOT NULL DEFAULT '[]'::jsonb,
     updated_at       TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
 ALTER TABLE tg_sync_settings ADD COLUMN IF NOT EXISTS topic_id INTEGER;
+ALTER TABLE tg_sync_settings ADD COLUMN IF NOT EXISTS last_run_log JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 INSERT INTO tg_sync_settings (id)
 VALUES (1)

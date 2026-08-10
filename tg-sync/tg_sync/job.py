@@ -10,9 +10,19 @@ from .backup import backup_trades
 from .config import Config
 from .models import ClosedTrade
 from .openrouter import extract_trades_for_week
-from .settings import finish_run, mark_running
+from .settings import append_run_log, finish_run, mark_running
 from .telegram_fetch import build_client, ensure_session, fetch_messages
 from .weeks import chunk_by_calendar_weeks
+
+
+def _log(
+    connection: psycopg.Connection,
+    message: str,
+    *,
+    level: str = "info",
+    stats: dict | None = None,
+) -> None:
+    append_run_log(connection, message, level=level, stats=stats)
 
 
 async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
@@ -22,10 +32,15 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
         "messages": 0,
         "trades": 0,
         "backupFile": "",
+        "backupCount": 0,
         "inserted": 0,
+        "weekIndex": 0,
+        "phase": "start",
     }
 
     try:
+        _log(connection, "Старт синхронизации", stats=stats)
+
         if not settings.chat_id.strip():
             raise RuntimeError("Не задан chat_id в настройках tg-sync")
 
@@ -34,6 +49,15 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
         if not rescan_all and parse_from is None:
             raise RuntimeError("Укажите parse_from или включите «пересмотреть весь чат»")
 
+        topic_label = settings.topic_id if settings.topic_id is not None else "—"
+        mode = "полный рескан" if rescan_all else f"с {parse_from.isoformat()}"
+        _log(
+            connection,
+            f"Параметры: chat={settings.chat_id}, topic={topic_label}, режим={mode}, tz={settings.timezone}",
+        )
+
+        stats["phase"] = "backup"
+        _log(connection, "Делаю бекап сделок…", stats=stats)
         backup_path, backup_count = backup_trades(
             connection,
             config.backups_dir,
@@ -42,14 +66,18 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
         )
         stats["backupFile"] = backup_path.name
         stats["backupCount"] = backup_count
-        print(f"Бекап: {backup_path} ({backup_count} сделок)")
+        _log(connection, f"Бекап готов: {backup_path.name} ({backup_count} сделок)", stats=stats)
 
         run_dir = config.work_dir / datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         run_dir.mkdir(parents=True, exist_ok=True)
+        _log(connection, f"Рабочая папка прогона: {run_dir.name}")
 
+        stats["phase"] = "telegram"
+        _log(connection, "Подключаюсь к Telegram…", stats=stats)
         client = build_client(config)
         async with client:
             await ensure_session(client)
+            _log(connection, "Сессия Telegram авторизована, читаю сообщения…")
             messages = await fetch_messages(
                 client,
                 settings.chat_id,
@@ -58,15 +86,20 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
             )
 
         stats["messages"] = len(messages)
-        print(f"Сообщений из TG: {len(messages)}")
+        _log(connection, f"Получено сообщений: {len(messages)}", stats=stats)
 
         weeks = chunk_by_calendar_weeks(messages, settings.timezone)
         stats["weeks"] = len(weeks)
-        all_trades: list[ClosedTrade] = []
+        stats["phase"] = "llm"
+        _log(connection, f"Нарезано недель: {len(weeks)}. Модель: {config.openrouter_model}", stats=stats)
 
+        all_trades: list[ClosedTrade] = []
         for index, chunk in enumerate(weeks, start=1):
-            print(
-                f"Неделя {index}/{len(weeks)} {chunk.key}: {len(chunk.messages)} сообщений → OpenRouter"
+            stats["weekIndex"] = index
+            _log(
+                connection,
+                f"Неделя {index}/{len(weeks)} ({chunk.key}): {len(chunk.messages)} сообщ. → OpenRouter",
+                stats=stats,
             )
             trades = await extract_trades_for_week(
                 api_key=config.openrouter_api_key,
@@ -82,12 +115,18 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
                 encoding="utf-8",
             )
             all_trades.extend(trades)
+            _log(
+                connection,
+                f"Неделя {chunk.key}: извлечено сделок {len(trades)} (накоплено {len(all_trades)})",
+                stats=stats,
+            )
 
-        # Дедуп внутри прогона по natural key; вне окна parse_from отбрасываем.
         unique: list[ClosedTrade] = []
         seen: set[tuple] = set()
+        skipped_old = 0
         for trade in sorted(all_trades, key=lambda item: (item.datetime, item.ticker, item.roe)):
             if not rescan_all and parse_from is not None and trade.datetime < parse_from:
+                skipped_old += 1
                 continue
             key = (trade.datetime, trade.ticker, trade.roe)
             if key in seen:
@@ -102,8 +141,12 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
             encoding="utf-8",
         )
         stats["trades"] = len(unique)
-        print(f"Собрано сделок: {len(unique)}. Пишем в БД…")
+        if skipped_old:
+            _log(connection, f"Отброшено вне окна parse_from: {skipped_old}")
+        _log(connection, f"Уникальных сделок к загрузке: {len(unique)}", stats=stats)
 
+        stats["phase"] = "apply"
+        _log(connection, "Пишу сделки в БД (атомарно)…", stats=stats)
         inserted = apply_trades(
             connection,
             unique,
@@ -111,15 +154,22 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
             rescan_all=rescan_all,
         )
         stats["inserted"] = inserted
+        stats["phase"] = "done"
 
+        _log(
+            connection,
+            f"Готово: вставлено {inserted}, бекап {backup_path.name}",
+            level="success",
+            stats=stats,
+        )
         finish_run(
             connection,
             status="success",
             stats=stats,
             clear_rescan_all=rescan_all,
         )
-        print(f"Готово: inserted={inserted}, backup={backup_path.name}")
     except Exception as error:  # noqa: BLE001
+        stats["phase"] = "error"
+        _log(connection, f"Ошибка: {error}", level="error", stats=stats)
         finish_run(connection, status="error", error=str(error), stats=stats)
-        print(f"Ошибка job: {error}")
         raise

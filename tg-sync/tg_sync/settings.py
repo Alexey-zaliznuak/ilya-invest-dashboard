@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import psycopg
+
+MAX_LOG_ENTRIES = 400
 
 
 @dataclass
@@ -47,6 +49,8 @@ def mark_running(connection: psycopg.Connection) -> TgSyncSettings:
            SET run_requested = false,
                last_run_status = 'running',
                last_run_error = '',
+               last_run_stats = '{}'::jsonb,
+               last_run_log = '[]'::jsonb,
                last_run_at = now(),
                updated_at = now()
          WHERE id = 1
@@ -58,6 +62,49 @@ def mark_running(connection: psycopg.Connection) -> TgSyncSettings:
     if row is None:
         raise RuntimeError("Не удалось стартовать job: уже running или строка настроек отсутствует")
     return _from_row(row)
+
+
+def append_run_log(
+    connection: psycopg.Connection,
+    message: str,
+    *,
+    level: str = "info",
+    stats: dict[str, Any] | None = None,
+) -> None:
+    entry = {
+        "at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "level": level,
+        "message": message[:2000],
+    }
+    print(f"[{level}] {message}")
+
+    connection.execute(
+        """
+        UPDATE tg_sync_settings
+           SET last_run_log = COALESCE(last_run_log, '[]'::jsonb) || %s::jsonb,
+               last_run_stats = COALESCE(%s::jsonb, last_run_stats),
+               updated_at = now()
+         WHERE id = 1
+        """,
+        (
+            json.dumps([entry], ensure_ascii=False),
+            json.dumps(stats, ensure_ascii=False) if stats is not None else None,
+        ),
+    )
+    connection.execute(
+        """
+        UPDATE tg_sync_settings
+           SET last_run_log = COALESCE((
+                 SELECT jsonb_agg(value ORDER BY ordinality)
+                   FROM jsonb_array_elements(last_run_log)
+                        WITH ORDINALITY AS t(value, ordinality)
+                  WHERE ordinality > jsonb_array_length(last_run_log) - %s
+               ), '[]'::jsonb)
+         WHERE id = 1
+           AND jsonb_array_length(COALESCE(last_run_log, '[]'::jsonb)) > %s
+        """,
+        (MAX_LOG_ENTRIES, MAX_LOG_ENTRIES),
+    )
 
 
 def finish_run(

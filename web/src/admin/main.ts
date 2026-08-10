@@ -17,6 +17,7 @@ import { clearSession, loadSession } from '../lib/session';
 import { initTheme } from '../lib/theme';
 import type { Trade } from '../lib/types';
 import { setupLoginForm } from './login';
+import { bindAdminNav } from './nav';
 import { bindTgSyncPanel, readTgSyncElements } from './tg-sync-settings';
 import { showToast } from './toast';
 import { bindTradeForm, readFormElements } from './trade-form';
@@ -71,6 +72,7 @@ const form = bindTradeForm(formElements, async (draft, editingId) => {
 });
 
 const tgSync = bindTgSyncPanel(readTgSyncElements(), reportError, (message) => showToast(message));
+const nav = bindAdminNav();
 
 function reportError(error: unknown, fallback: string): void {
   if (error instanceof ApiError && error.status === 401) {
@@ -122,6 +124,9 @@ function showApp(adminLogin: string): void {
   logoutButton.hidden = false;
   whoami.hidden = false;
   whoami.textContent = adminLogin;
+  nav.show(
+    window.location.hash.replace(/^#/, '') === 'telegram' ? 'telegram' : 'trades',
+  );
   void refresh();
   void tgSync.load().catch((error) => reportError(error, 'Не удалось загрузить настройки tg-sync'));
   tgSync.startPolling();
