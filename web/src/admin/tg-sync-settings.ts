@@ -28,6 +28,7 @@ export interface TgSyncFormElements {
   cron: HTMLInputElement;
   chatId: HTMLInputElement;
   topicId: HTMLInputElement;
+  secondTopicId: HTMLInputElement;
   parseFrom: HTMLInputElement;
   timezone: HTMLInputElement;
   rescanAll: HTMLInputElement;
@@ -161,6 +162,7 @@ const fillForm = (elements: TgSyncFormElements, settings: TgSyncSettings): void 
   elements.cron.value = settings.cron;
   elements.chatId.value = settings.chatId;
   elements.topicId.value = settings.topicId === null ? '' : String(settings.topicId);
+  elements.secondTopicId.value = settings.secondTopicId == null ? '' : String(settings.secondTopicId);
   elements.parseFrom.value = toDatetimeLocalValue(settings.parseFrom);
   elements.timezone.value = settings.timezone;
   elements.rescanAll.checked = settings.rescanAll;
@@ -284,6 +286,7 @@ export function bindTgSyncPanel(
       cron: elements.cron.value.trim(),
       chatId: elements.chatId.value.trim(),
       topicId: readTopicId(elements.topicId.value),
+      secondTopicId: readTopicId(elements.secondTopicId.value),
       parseFrom: fromDatetimeLocalValue(elements.parseFrom.value),
       timezone: elements.timezone.value.trim() || 'Europe/Moscow',
       rescanAll: elements.rescanAll.checked,
@@ -363,6 +366,7 @@ export function bindTgSyncPanel(
     setBusy(true);
     try {
       const resolved = await resolveTelegramLink(elements.link.value.trim());
+      if (elements.chatId.value.trim() !== resolved.chatId) elements.secondTopicId.value = '';
       elements.chatId.value = resolved.chatId;
       elements.topicId.value = resolved.topicId === null ? '' : String(resolved.topicId);
       await persistForm();
@@ -398,6 +402,10 @@ export function bindTgSyncPanel(
   elements.dialogsList.addEventListener('click', (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-id]');
     if (!button) return;
+    if (elements.chatId.value.trim() !== button.dataset.id) {
+      elements.topicId.value = '';
+      elements.secondTopicId.value = '';
+    }
     elements.chatId.value = button.dataset.id ?? '';
     void persistForm()
       .then(() => onInfo(`Сохранён чат ${elements.chatId.value}`))
@@ -439,6 +447,7 @@ export const readTgSyncElements = (): TgSyncFormElements => ({
   cron: requireElement<HTMLInputElement>('#tgCron'),
   chatId: requireElement<HTMLInputElement>('#tgChatId'),
   topicId: requireElement<HTMLInputElement>('#tgTopicId'),
+  secondTopicId: requireElement<HTMLInputElement>('#tgSecondTopicId'),
   parseFrom: requireElement<HTMLInputElement>('#tgParseFrom'),
   timezone: requireElement<HTMLInputElement>('#tgTimezone'),
   rescanAll: requireElement<HTMLInputElement>('#tgRescanAll'),

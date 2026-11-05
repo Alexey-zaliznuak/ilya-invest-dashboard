@@ -56,7 +56,10 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
         if not rescan_all and parse_from is None:
             raise RuntimeError("Укажите parse_from или включите «пересмотреть весь чат»")
 
-        topic_label = settings.topic_id if settings.topic_id is not None else "—"
+        topic_label = ", ".join(
+            str(topic) for topic in (settings.topic_id, settings.second_topic_id)
+            if topic is not None
+        ) or "весь чат"
         mode = "полный рескан" if rescan_all else f"с {parse_from.isoformat()}"
         _log(
             connection,
@@ -90,6 +93,7 @@ async def run_sync_job(connection: psycopg.Connection, config: Config) -> None:
                 settings.chat_id,
                 min_datetime=parse_from,
                 topic_id=settings.topic_id,
+                second_topic_id=settings.second_topic_id,
             )
 
         stats["messages"] = len(messages)

@@ -198,10 +198,24 @@
                       id="tgTopicId"
                       type="number"
                       min="1"
+                      max="2147483647"
                       step="1"
                       placeholder="необязательно"
                     />
-                    <span class="field-hint">ID форум-топика супергруппы</span>
+                    <span class="field-hint">ID форум-топика. Оба поля пусты — читать весь чат</span>
+                  </div>
+                  <div class="field">
+                    <label for="tgSecondTopicId">Второй топик</label>
+                    <input
+                      class="g-input"
+                      id="tgSecondTopicId"
+                      type="number"
+                      min="1"
+                      max="2147483647"
+                      step="1"
+                      placeholder="необязательно"
+                    />
+                    <span class="field-hint">ID второго топика того же чата — читать вместе с первым</span>
                   </div>
                   <div class="field">
                     <label for="tgParseFrom">Дальность парсинга</label>

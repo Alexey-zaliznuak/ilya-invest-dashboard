@@ -33,11 +33,14 @@ const parseChatId = (value) => {
   return chatId;
 };
 
-const parseTopicId = (value) => {
+const parseTopicId = (value, field = 'topicId') => {
   if (value === undefined || value === null || value === '') return null;
   const topicId = Number(value);
-  if (!Number.isInteger(topicId) || topicId < 1) {
-    throw badRequest('topicId должен быть целым числом ≥ 1');
+  if (
+    !['string', 'number'].includes(typeof value) ||
+    !Number.isInteger(topicId) || topicId < 1 || topicId > 2147483647
+  ) {
+    throw badRequest(`${field} должен быть целым числом от 1 до 2147483647`);
   }
   return topicId;
 };
@@ -77,6 +80,7 @@ export function parseTgSyncSettingsInput(body) {
     cron: parseCron(body.cron),
     chatId: parseChatId(body.chatId),
     topicId: parseTopicId(body.topicId),
+    secondTopicId: parseTopicId(body.secondTopicId, 'secondTopicId'),
     parseFrom: parseParseFrom(body.parseFrom),
     timezone: parseTimezone(body.timezone),
     rescanAll: parseBool(body.rescanAll, 'rescanAll'),

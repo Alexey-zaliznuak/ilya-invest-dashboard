@@ -59,6 +59,7 @@ export interface TgSyncSettings {
   cron: string;
   chatId: string;
   topicId: number | null;
+  secondTopicId: number | null;
   parseFrom: string | null;
   timezone: string;
   rescanAll: boolean;

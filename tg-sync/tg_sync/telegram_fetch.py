@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from typing import Any
 
@@ -86,8 +87,30 @@ async def fetch_messages(
     *,
     min_datetime: datetime | None,
     topic_id: int | None = None,
+    second_topic_id: int | None = None,
 ) -> list[ChatMessage]:
     entity = await client.get_entity(_resolve_chat_ref(chat_id))
+    topics = list(dict.fromkeys(topic for topic in (topic_id, second_topic_id) if topic is not None))
+    # Wait for both readers even on failure, before the caller closes the client.
+    results = await asyncio.gather(
+        *(_fetch_topic_messages(client, entity, min_datetime, topic) for topic in (topics or [None])),
+        return_exceptions=True,
+    )
+    collected: dict[int, ChatMessage] = {}
+    for result in results:
+        if isinstance(result, BaseException):
+            raise result
+        for message in result:
+            collected[message.id] = message
+    return sorted(collected.values(), key=lambda message: (message.datetime, message.id))
+
+
+async def _fetch_topic_messages(
+    client: TelegramClient,
+    entity: Any,
+    min_datetime: datetime | None,
+    topic_id: int | None,
+) -> list[ChatMessage]:
     min_utc = min_datetime.astimezone(timezone.utc) if min_datetime else None
     collected: list[ChatMessage] = []
 

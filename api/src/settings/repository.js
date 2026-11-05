@@ -5,6 +5,7 @@ const COLUMNS = `
   cron,
   chat_id,
   topic_id,
+  second_topic_id,
   CASE
     WHEN parse_from IS NULL THEN NULL
     ELSE to_char(parse_from AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
@@ -37,6 +38,7 @@ const mapRow = (row) => ({
   cron: row.cron,
   chatId: row.chat_id,
   topicId: row.topic_id === null || row.topic_id === undefined ? null : Number(row.topic_id),
+  secondTopicId: row.second_topic_id == null ? null : Number(row.second_topic_id),
   parseFrom: row.parse_from,
   timezone: row.timezone,
   rescanAll: row.rescan_all,
@@ -71,6 +73,7 @@ export async function updateTgSyncSettings(input) {
             parse_from = $5,
             timezone = $6,
             rescan_all = $7,
+            second_topic_id = $8,
             updated_at = now()
       WHERE id = 1
       RETURNING ${COLUMNS}`,
@@ -82,6 +85,7 @@ export async function updateTgSyncSettings(input) {
       input.parseFrom,
       input.timezone,
       input.rescanAll,
+      input.secondTopicId,
     ],
   );
   return mapRow(rows[0]);

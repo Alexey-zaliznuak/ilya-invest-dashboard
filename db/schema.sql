@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS tg_sync_settings (
 );
 
 ALTER TABLE tg_sync_settings ADD COLUMN IF NOT EXISTS topic_id INTEGER;
+ALTER TABLE tg_sync_settings ADD COLUMN IF NOT EXISTS second_topic_id INTEGER;
 ALTER TABLE tg_sync_settings ADD COLUMN IF NOT EXISTS last_run_log JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE tg_sync_settings ADD COLUMN IF NOT EXISTS last_run_messages JSONB NOT NULL DEFAULT '{"used":[],"unused":[]}'::jsonb;
 

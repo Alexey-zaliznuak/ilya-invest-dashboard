@@ -16,6 +16,7 @@ class TgSyncSettings:
     cron: str
     chat_id: str
     topic_id: int | None
+    second_topic_id: int | None
     parse_from: datetime | None
     timezone: str
     rescan_all: bool
@@ -27,7 +28,7 @@ class TgSyncSettings:
 
 
 _SELECT = """
-    SELECT enabled, cron, chat_id, topic_id, parse_from, timezone, rescan_all,
+    SELECT enabled, cron, chat_id, topic_id, second_topic_id, parse_from, timezone, rescan_all,
            run_requested, last_run_at, last_run_status, last_run_error, last_run_stats
       FROM tg_sync_settings
      WHERE id = 1
@@ -56,7 +57,7 @@ def mark_running(connection: psycopg.Connection) -> TgSyncSettings:
                updated_at = now()
          WHERE id = 1
            AND last_run_status IS DISTINCT FROM 'running'
-     RETURNING enabled, cron, chat_id, topic_id, parse_from, timezone, rescan_all,
+     RETURNING enabled, cron, chat_id, topic_id, second_topic_id, parse_from, timezone, rescan_all,
                run_requested, last_run_at, last_run_status, last_run_error, last_run_stats
         """
     ).fetchone()
@@ -144,11 +145,13 @@ def _from_row(row: dict[str, Any]) -> TgSyncSettings:
     if isinstance(stats, str):
         stats = json.loads(stats)
     topic = row.get("topic_id")
+    second_topic = row.get("second_topic_id")
     return TgSyncSettings(
         enabled=bool(row["enabled"]),
         cron=str(row["cron"]),
         chat_id=str(row["chat_id"] or ""),
         topic_id=int(topic) if topic is not None else None,
+        second_topic_id=int(second_topic) if second_topic is not None else None,
         parse_from=row["parse_from"],
         timezone=str(row["timezone"] or "Europe/Moscow"),
         rescan_all=bool(row["rescan_all"]),
